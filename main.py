@@ -10,6 +10,7 @@ from opts import parse_opts
 from model import generate_model
 from mean import get_mean
 from classify import classify_video
+import time
 
 if __name__=="__main__":
     opt = parse_opts()
@@ -22,7 +23,7 @@ if __name__=="__main__":
     model = generate_model(opt)
     print('loading model {}'.format(opt.model))
     model_data = torch.load(opt.model)
-    #assert opt.arch == model_data['arch']
+    assert opt.arch == model_data['arch']
     model.load_state_dict(model_data['state_dict'])
     model.eval()
     if opt.verbose:
@@ -54,7 +55,11 @@ if __name__=="__main__":
             subprocess.call('ffmpeg -i {} tmp/image_%05d.jpg'.format(video_path),
                             shell=True)
 
+
+            start_time = time.time()
             result = classify_video('tmp', input_file, class_names, model, opt)
+            end_time = time.time()
+            print("--- Execution time: %s seconds ---" % (end_time - start_time))
             outputs.append(result)
 
             subprocess.call('rm -rf tmp', shell=True)
