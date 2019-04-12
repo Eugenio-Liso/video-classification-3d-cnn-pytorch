@@ -14,7 +14,7 @@ from mean import get_mean
 from classify import classify_video
 import time
 
-if __name__=="__main__":
+if __name__ == "__main__":
     opt = parse_opts()
     opt.mean = get_mean()
     opt.arch = '{}-{}'.format(opt.model_name, opt.model_depth)
@@ -49,22 +49,32 @@ if __name__=="__main__":
     print('Input video files: {}'.format(input_video_files))
 
     outputs = []
+    executions_times = []
     for input_file in input_video_files:
         video_path = os.path.join(input_video_dir, input_file)
         if os.path.exists(video_path):
-            print(video_path)
+            print('Prediction on input file: {}'.format(video_path))
             subprocess.call('mkdir tmp', shell=True)
-            subprocess.call('ffmpeg -i {} tmp/image_%05d.jpg'.format(video_path),
-                            shell=True)
 
+            # The "{}" are useful to expand path also with spaces
+            subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
+                            shell=True)
 
             start_time = time.time()
             result = classify_video('tmp', input_file, class_names, model, opt)
             end_time = time.time()
-            print("--- Execution time: %s seconds ---" % (end_time - start_time))
+
+            execution_time = end_time - start_time
+            print("--- Execution time: %s seconds ---" % execution_time)
+
             outputs.append(result)
+            executions_times.append((video_path, execution_time))
 
             subprocess.call('rm -rf tmp', shell=True)
+
+            torch.cuda.empty_cache()
+            memory_still_in_use = torch.cuda.memory_allocated
+            print('Memory allocated: {}'.format(memory_still_in_use))
         else:
             print('{} does not exist'.format(input_file))
 
@@ -73,3 +83,5 @@ if __name__=="__main__":
 
     with open(opt.output, 'w') as f:
         json.dump(outputs, f)
+
+    print("Execution times: {}".format(executions_times))
