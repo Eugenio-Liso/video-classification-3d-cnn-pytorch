@@ -16,6 +16,7 @@ from classify import classify_video
 import time
 import gc
 
+#https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741/18
 
 # prints currently alive Tensors and Variables
 def print_tensors_dump():
