@@ -7,12 +7,42 @@ import subprocess
 import numpy as np
 import torch
 from torch import nn
+import ctypes
 
 from opts import parse_opts
 from model import generate_model
 from mean import get_mean
 from classify import classify_video
 import time
+import gc
+
+
+# prints currently alive Tensors and Variables
+def print_tensors_dump():
+    for obj in gc.get_objects():
+        try:
+            if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                print(type(obj), obj.size())
+        except:
+            pass
+
+
+# import psutil
+# def memReport():
+#     for obj in gc.get_objects():
+#         if torch.is_tensor(obj):
+#             print(type(obj), obj.size())
+#
+#
+# def cpuStats():
+#     print(sys.version)
+#     print(psutil.cpu_percent())
+#     print(psutil.virtual_memory())  # physical memory usage
+#     pid = os.getpid()
+#     py = psutil.Process(pid)
+#     memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+#     print('memory GB:', memoryUse)
+#
 
 if __name__ == "__main__":
     opt = parse_opts()
@@ -72,9 +102,13 @@ if __name__ == "__main__":
 
             subprocess.call('rm -rf tmp', shell=True)
 
+            # TODO see if this helps with memory
             torch.cuda.empty_cache()
-            memory_still_in_use = torch.cuda.memory_allocated
-            print('Memory allocated: {}'.format(memory_still_in_use))
+
+            # Does not work
+            memory_still_in_use = ctypes.cast(id(torch.cuda.memory_allocated), ctypes.py_object).value
+            print('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
+            print_tensors_dump()
         else:
             print('{} does not exist'.format(input_file))
 
