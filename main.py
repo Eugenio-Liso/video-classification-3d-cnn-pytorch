@@ -46,6 +46,8 @@ if __name__=="__main__":
     input_video_dir = opt.video_root
     input_video_files = [f for f in listdir(input_video_dir) if isfile(join(input_video_dir, f))]
 
+    print('Input video files: {}'.format(input_video_files))
+
     outputs = []
     for input_file in input_video_files:
         video_path = os.path.join(input_video_dir, input_file)
