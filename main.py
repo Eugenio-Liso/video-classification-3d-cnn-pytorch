@@ -1,4 +1,6 @@
 import os
+from os import listdir
+from os.path import isfile, join
 import sys
 import json
 import subprocess
@@ -29,11 +31,6 @@ if __name__=="__main__":
     if opt.verbose:
         print(model)
 
-    input_files = []
-    with open(opt.input, 'r') as f:
-        for row in f:
-            input_files.append(row[:-1])
-
     class_names = []
     with open('class_names_list') as f:
         for row in f:
@@ -46,9 +43,12 @@ if __name__=="__main__":
     if os.path.exists('tmp'):
         subprocess.call('rm -rf tmp', shell=True)
 
+    input_video_dir = opt.video_root
+    input_video_files = [f for f in listdir(input_video_dir) if isfile(join(input_video_dir, f))]
+
     outputs = []
-    for input_file in input_files:
-        video_path = os.path.join(opt.video_root, input_file)
+    for input_file in input_video_files:
+        video_path = os.path.join(input_video_dir, input_file)
         if os.path.exists(video_path):
             print(video_path)
             subprocess.call('mkdir tmp', shell=True)
