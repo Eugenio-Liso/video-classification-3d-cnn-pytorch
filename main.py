@@ -107,9 +107,9 @@ if __name__ == "__main__":
             torch.cuda.empty_cache()
 
             # Does not work
-            memory_still_in_use = ctypes.cast(id(torch.cuda.memory_allocated), ctypes.py_object).value
-            print('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
-            print_tensors_dump()
+            #memory_still_in_use = ctypes.cast(id(torch.cuda.memory_allocated), ctypes.py_object).value
+            #print('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
+            #print_tensors_dump()
         else:
             print('{} does not exist'.format(input_file))
 
