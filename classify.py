@@ -93,4 +93,4 @@ def classify_video(video_dir, video_name, class_names, model, opt):
 
         results['clips'].append(clip_results)
 
-    return results
+    return results, executions_times_with_video_name
