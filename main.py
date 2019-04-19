@@ -15,6 +15,7 @@ from mean import get_mean
 from classify import classify_video
 import time
 import gc
+import statistics
 
 #https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741/18
 
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     print('Input video files: {}'.format(input_video_files))
 
     outputs = []
-    executions_times = []
+    executions_times_with_video_names = []
     for input_file in input_video_files:
         video_path = os.path.join(input_video_dir, input_file)
         if os.path.exists(video_path):
@@ -91,15 +92,10 @@ if __name__ == "__main__":
             subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
                             shell=True)
 
-            start_time = time.time()
-            result = classify_video('tmp', input_file, class_names, model, opt)
-            end_time = time.time()
-
-            execution_time = end_time - start_time
-            print("--- Execution time: %s seconds ---" % execution_time)
+            result, exec_times_with_video_name_on_prediction = classify_video('tmp', input_file, class_names, model, opt)
 
             outputs.append(result)
-            executions_times.append((video_path, execution_time))
+            executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
 
             subprocess.call('rm -rf tmp', shell=True)
 
@@ -119,4 +115,16 @@ if __name__ == "__main__":
     with open(opt.output, 'w') as f:
         json.dump(outputs, f)
 
-    print("Execution times: {}".format(executions_times))
+    mean_execution_times = []
+
+    for prediction in executions_times_with_video_names:
+        for video_name, exec_times_with_segments in prediction.items():
+
+            mean_exec_time = []
+            for segment, exec_time in exec_times_with_segments:
+                mean_exec_time.append(exec_time)
+
+            mean_execution_times.append((video_name,statistics.mean(mean_exec_time)))
+
+    print("Execution times: {}".format(executions_times_with_video_names))
+    print("Mean execution times: {}".format(mean_execution_times))
