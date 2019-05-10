@@ -1,13 +1,13 @@
 import os
-import sys
 import json
 import subprocess
 import numpy as np
+from opts_predictions import parse_opts_prediction
 from PIL import Image, ImageDraw, ImageFont
 
 
 def get_fps(video_file_path, frames_directory_path):
-    p = subprocess.Popen('ffprobe {}'.format(video_file_path),
+    p = subprocess.Popen('ffprobe -i "{}"'.format(video_file_path),
                          shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     _, res = p.communicate()
     res = res.decode('utf-8')
@@ -25,33 +25,35 @@ def get_fps(video_file_path, frames_directory_path):
 
 
 if __name__ == '__main__':
-    result_json_path = sys.argv[1]
-    video_root_path = sys.argv[2]
-    dst_directory_path = sys.argv[3]
-    if not os.path.exists(dst_directory_path):
-        subprocess.call('mkdir -p {}'.format(dst_directory_path), shell=True)
-    class_name_path = sys.argv[4]
-    temporal_unit = int(sys.argv[5])
+    opt = parse_opts_prediction()
+    output_json = opt.output_json
+    input_videos_folder = opt.input_video_folder
+    prediction_folder = opt.prediction_video_folder
 
-    with open(result_json_path, 'r') as f:
+    if not os.path.exists(prediction_folder):
+        subprocess.call('mkdir -p {}'.format(prediction_folder), shell=True)
+    classes_list = opt.classes_list
+    temporal_unit_window = int(opt.frames_for_prediction)
+
+    with open(output_json, 'r') as f:
         results = json.load(f)
 
-    with open(class_name_path, 'r') as f:
+    with open(classes_list, 'r') as f:
         class_names = []
         for row in f:
             class_names.append(row[:-1])
 
     for index in range(len(results)):
-        video_path = os.path.join(video_root_path, results[index]['video'])
+        video_path = os.path.join(input_videos_folder, results[index]['video'])
         print(video_path)
 
         clips = results[index]['clips']
         unit_classes = []
         unit_segments = []
-        if temporal_unit == 0:
+        if temporal_unit_window == 0:
             unit = len(clips)
         else:
-            unit = temporal_unit
+            unit = temporal_unit_window
         for i in range(0, len(clips), unit):
             n_elements = min(unit, len(clips) - i)
             scores = np.array(clips[i]['scores'])
@@ -66,7 +68,7 @@ if __name__ == '__main__':
             subprocess.call('rm -rf tmp', shell=True)
         subprocess.call('mkdir tmp', shell=True)
 
-        subprocess.call('ffmpeg -i {} tmp/image_%05d.jpg'.format(video_path), shell=True)
+        subprocess.call('ffmpeg -i "{}" tmp/image_%05d.jpg'.format(video_path), shell=True)
 
         fps = get_fps(video_path, 'tmp')
 
@@ -91,7 +93,7 @@ if __name__ == '__main__':
                        font=font, fill=(235, 235, 235))
                 image.save('tmp/image_{:05}_pred.jpg'.format(j))
 
-        dst_file_path = os.path.join(dst_directory_path, video_path.split('/')[-1])
+        dst_file_path = os.path.join(prediction_folder, video_path.split('/')[-1])
         subprocess.call('ffmpeg -y -r {} -i tmp/image_%05d_pred.jpg -b:v 1000k {}'.format(fps, dst_file_path),
                         shell=True)
 
