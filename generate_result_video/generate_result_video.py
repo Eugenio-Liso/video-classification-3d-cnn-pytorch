@@ -2,7 +2,7 @@ import os
 import json
 import subprocess
 import numpy as np
-from generate_result_video.opts_predictions import parse_opts_prediction
+from opts_predictions import parse_opts_prediction
 from PIL import Image, ImageDraw, ImageFont
 
 
