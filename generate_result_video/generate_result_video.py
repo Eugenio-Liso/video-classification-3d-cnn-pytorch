@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     for index in range(len(results)):
         video_path = os.path.join(input_videos_folder, results[index]['video'])
-        print(video_path)
+        print('Starting annotation on input video: {}'.format(video_path))
 
         clips = results[index]['clips']
         unit_classes = []
@@ -68,7 +68,7 @@ if __name__ == '__main__':
             subprocess.call('rm -rf tmp', shell=True)
         subprocess.call('mkdir tmp', shell=True)
 
-        subprocess.call('ffmpeg -i "{}" tmp/image_%05d.jpg'.format(video_path), shell=True)
+        subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path), shell=True)
 
         fps = get_fps(video_path, 'tmp')
 
@@ -94,7 +94,7 @@ if __name__ == '__main__':
                 image.save('tmp/image_{:05}_pred.jpg'.format(j))
 
         dst_file_path = os.path.join(prediction_folder, video_path.split('/')[-1])
-        subprocess.call('ffmpeg -y -r {} -i tmp/image_%05d_pred.jpg -b:v 1000k {}'.format(fps, dst_file_path),
+        subprocess.call('ffmpeg -hide_banner -loglevel fatal -y -r {} -i tmp/image_%05d_pred.jpg -b:v 1000k {}'.format(fps, dst_file_path),
                         shell=True)
 
         if os.path.exists('tmp'):
