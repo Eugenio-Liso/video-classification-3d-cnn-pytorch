@@ -9,7 +9,8 @@ def parse_opts_prediction():
     parser.add_argument('--classes_list', default='class_names_list', type=str,
                         help='File containing the available classes for prediction (i.e. class labels)')
     parser.add_argument('--frames_for_prediction', type=str,
-                        help='Determines how many group of frames (i.e. clips) will be averaged in order to select the output class (by default, a clip is 16 frames long)')
+                        help='Determines how many group of frames (i.e. clips) will be averaged in order to select '
+                             'the output class (by default, a clip is 16 frames long)')
 
     args = parser.parse_args()
 
