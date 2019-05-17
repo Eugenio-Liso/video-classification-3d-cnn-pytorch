@@ -16,16 +16,20 @@ from classify import classify_video
 import time
 import gc
 import statistics
+from logging import logger_factory as lf
+
+logger = lf.getBasicLogger(os.path.basename(__file__))
 
 
 # https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741/18
 
-# prints currently alive Tensors and Variables
+# logger.infos currently alive Tensors and Variables
 def print_tensors_dump():
     for obj in gc.get_objects():
         try:
             if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                print(type(obj), obj.size())
+                string = "object type: {} - object size: {}".format(type(obj), obj.size())
+                logger.info(string)
         except:
             pass
 
@@ -34,17 +38,17 @@ def print_tensors_dump():
 # def memReport():
 #     for obj in gc.get_objects():
 #         if torch.is_tensor(obj):
-#             print(type(obj), obj.size())
+#             logger.info(type(obj), obj.size())
 #
 #
 # def cpuStats():
-#     print(sys.version)
-#     print(psutil.cpu_percent())
-#     print(psutil.virtual_memory())  # physical memory usage
+#     logger.info(sys.version)
+#     logger.info(psutil.cpu_percent())
+#     logger.info(psutil.virtual_memory())  # physical memory usage
 #     pid = os.getpid()
 #     py = psutil.Process(pid)
 #     memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
-#     print('memory GB:', memoryUse)
+#     logger.info('memory GB:', memoryUse)
 #
 
 if __name__ == "__main__":
@@ -56,22 +60,18 @@ if __name__ == "__main__":
     opt.n_classes = 400
 
     model = generate_model(opt)
-    print('loading model {}'.format(opt.model))
+    logger.info('Loading model in: {}'.format(opt.model))
     model_data = torch.load(opt.model)
     assert opt.arch == model_data['arch']
     model.load_state_dict(model_data['state_dict'])
     model.eval()
     if opt.verbose:
-        print(model)
+        logger.info(model)
 
     class_names = []
     with open('class_names_list') as f:
         for row in f:
             class_names.append(row[:-1])
-
-    ffmpeg_loglevel = 'quiet'
-    if opt.verbose:
-        ffmpeg_loglevel = 'info'
 
     if os.path.exists('tmp'):
         subprocess.call('rm -rf tmp', shell=True)
@@ -79,22 +79,36 @@ if __name__ == "__main__":
     input_video_dir = opt.video_root
     input_video_files = [f for f in listdir(input_video_dir) if isfile(join(input_video_dir, f))]
 
-    print('Input video files: {}'.format(input_video_files))
+    logger.info('Input video files: {}'.format(input_video_files))
+
+    prediction_input_mode = opt.prediction_input_mode
 
     outputs = []
     executions_times_with_video_names = []
     for input_file in input_video_files:
         video_path = os.path.join(input_video_dir, input_file)
         if os.path.exists(video_path):
-            print('Prediction on input file: {}'.format(video_path))
-            subprocess.call('mkdir tmp', shell=True)
+            logger.info('Prediction on input file: {}'.format(video_path))
 
-            # The "{}" are useful to expand path also with spaces
-            subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
-                            shell=True)
+            if prediction_input_mode == 'legacy':
+                subprocess.call('mkdir tmp', shell=True)
 
-            result, exec_times_with_video_name_on_prediction = classify_video('tmp', input_file, class_names, model,
-                                                                              opt)
+                # The "{}" are useful to expand path also with spaces
+                subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
+                                shell=True)
+
+                result, exec_times_with_video_name_on_prediction = classify_video('tmp', input_file, class_names, model,
+                                                                                  opt)
+            elif prediction_input_mode == 'opencv':
+                # TODO
+                logger.info("TODO")
+                result = []
+                exec_times_with_video_name_on_prediction = []
+            else:
+                raise ValueError(
+                    'Got input parameter for prediction: ' +
+                    prediction_input_mode +
+                    ' but expected one between [opencv,legacy]')
 
             outputs.append(result)
             executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
@@ -106,10 +120,10 @@ if __name__ == "__main__":
 
             # Does not work
             # memory_still_in_use = ctypes.cast(id(torch.cuda.memory_allocated), ctypes.py_object).value
-            # print('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
-            # print_tensors_dump()
+            # logger.info('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
+            # logger.info_tensors_dump()
         else:
-            print('{} does not exist'.format(input_file))
+            logger.info('{} does not exist'.format(input_file))
 
     if os.path.exists('tmp'):
         subprocess.call('rm -rf tmp', shell=True)
@@ -131,5 +145,5 @@ if __name__ == "__main__":
     with open(opt.output_times, 'w') as f:
         json.dump(mean_execution_times, f)
 
-    print("Execution times: {}".format(executions_times_with_video_names))
-    print("Mean execution times: {}".format(mean_execution_times))
+    logger.info("Execution times: {}".format(executions_times_with_video_names))
+    logger.info("Mean execution times: {}".format(mean_execution_times))
