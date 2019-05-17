@@ -6,10 +6,11 @@ from dataset import Video
 from spatial_transforms import (Compose, Normalize, Scale, CenterCrop, ToTensor)
 from temporal_transforms import LoopPadding
 
+
 def classify_video(video_dir, video_name, class_names, model, opt):
     assert opt.mode in ['score', 'feature']
 
-    batch_size=opt.batch_size
+    batch_size = opt.batch_size
 
     # TODO check se ha senso Scale + Crop stessa dimensione
     spatial_transform = Compose([Scale(opt.sample_size),

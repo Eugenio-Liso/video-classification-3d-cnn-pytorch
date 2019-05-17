@@ -1,0 +1,61 @@
+import sys
+import os
+
+sys.path.insert(0, os.path.join(sys.path[0], "../logging"))
+
+from pylab import *
+import json
+from opts_benchmark import parse_opts_benchmark
+from logger_factory import getBasicLogger
+
+logger = getBasicLogger(os.path.basename(__file__))
+
+
+def display_benchmark_results(exec_times, max_videos_in_row):
+    num_videos = len(exec_times)
+
+    logger.info("Number of videos to display: {}".format(num_videos))
+
+    if num_videos <= max_videos_in_row:
+        columns = 1
+    else:
+        columns = int(ceil(len(exec_times) / max_videos_in_row))
+    _ = plt.figure()
+
+    logger.info(
+        "Chart will have {} rows and {} columns. Note that this configuration may be not respected by Matplotlib "
+        "renderer.".format(num_videos, columns))
+
+    for current_video, exec_time_single_video in enumerate(exec_times, start=1):
+        plt.subplot(num_videos, columns, current_video)
+
+        for video, times in exec_time_single_video.items():
+
+            samples_points_y = []
+
+            for sample_prediction in times:
+                # tensor = sample[0]
+                single_execution_time = sample_prediction[1]
+                samples_points_y.append(single_execution_time)
+
+            batches_count_x = range(1, len(samples_points_y) + 1)  # Exclusive upper bound
+
+            plt.plot(batches_count_x, samples_points_y)
+            plt.ylabel('Prediction time (sec)')
+            plt.xlabel('Number of frame batches')
+
+    plt.show()
+
+
+if __name__ == '__main__':
+    opt = parse_opts_benchmark()
+    output_json_exec_times_path = opt.output_times
+
+    logger.info("Input json of execution times: {}".format(output_json_exec_times_path))
+
+    with open(output_json_exec_times_path, 'r') as f:
+        json_exec_times = json.load(f)
+
+    max_videos = opt.max_videos_rows
+
+    display_benchmark_results(json_exec_times, max_videos)
