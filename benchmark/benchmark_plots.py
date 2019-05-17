@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import json
 from opts_benchmark import parse_opts_benchmark
 from logger_factory import getBasicLogger
+import numpy as np
 
 logger = getBasicLogger(os.path.basename(__file__))
 
@@ -50,13 +51,20 @@ def extract_data(exec_time_single_video):
 
         batches_count_x = range(1, len(samples_points_y) + 1)  # Exclusive upper bound
 
-        plt.plot(batches_count_x, samples_points_y)
+        # Calculate the simple average of the data
+        y_mean = [np.mean(samples_points_y)] * len(batches_count_x)
+
+        plt.plot(batches_count_x, samples_points_y, label='Data', marker='o')
+        plt.plot(batches_count_x, y_mean, label='Mean', linestyle='--')
         plt.ylabel('Prediction time (sec)')
         plt.xlabel('Number of frame batches')
 
+        # Make a legend
+        plt.legend(loc='upper right')
+
 
 def display_results():
-    plt.subplots_adjust(wspace=0.5,hspace=1)
+    plt.subplots_adjust(wspace=0.5, hspace=1)
     plt.show()
 
 
