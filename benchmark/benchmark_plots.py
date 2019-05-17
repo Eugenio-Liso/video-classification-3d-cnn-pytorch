@@ -3,7 +3,8 @@ import os
 
 sys.path.insert(0, os.path.join(sys.path[0], "../logging"))
 
-from pylab import *
+from math import ceil
+import matplotlib.pyplot as plt
 import json
 from opts_benchmark import parse_opts_benchmark
 from logger_factory import getBasicLogger
@@ -11,7 +12,7 @@ from logger_factory import getBasicLogger
 logger = getBasicLogger(os.path.basename(__file__))
 
 
-def display_benchmark_results(exec_times, max_videos_in_row):
+def build_benchmark_results(exec_times, max_videos_in_row):
     num_videos = len(exec_times)
 
     logger.info("Number of videos to display: {}".format(num_videos))
@@ -26,24 +27,36 @@ def display_benchmark_results(exec_times, max_videos_in_row):
         "Chart will have {} rows and {} columns. Note that this configuration may be not respected by Matplotlib "
         "renderer.".format(num_videos, columns))
 
+    build_plot(columns, exec_times, num_videos)
+    display_results()
+
+
+def build_plot(columns, exec_times, rows):
     for current_video, exec_time_single_video in enumerate(exec_times, start=1):
-        plt.subplot(num_videos, columns, current_video)
+        plt.subplot(rows, columns, current_video)
 
-        for video, times in exec_time_single_video.items():
+        extract_data(exec_time_single_video)
 
-            samples_points_y = []
 
-            for sample_prediction in times:
-                # tensor = sample[0]
-                single_execution_time = sample_prediction[1]
-                samples_points_y.append(single_execution_time)
+def extract_data(exec_time_single_video):
+    for video, times in exec_time_single_video.items():
 
-            batches_count_x = range(1, len(samples_points_y) + 1)  # Exclusive upper bound
+        samples_points_y = []
 
-            plt.plot(batches_count_x, samples_points_y)
-            plt.ylabel('Prediction time (sec)')
-            plt.xlabel('Number of frame batches')
+        for sample_prediction in times:
+            # tensor = sample[0]
+            single_execution_time = sample_prediction[1]
+            samples_points_y.append(single_execution_time)
 
+        batches_count_x = range(1, len(samples_points_y) + 1)  # Exclusive upper bound
+
+        plt.plot(batches_count_x, samples_points_y)
+        plt.ylabel('Prediction time (sec)')
+        plt.xlabel('Number of frame batches')
+
+
+def display_results():
+    plt.subplots_adjust(wspace=0.5,hspace=1)
     plt.show()
 
 
@@ -58,4 +71,4 @@ if __name__ == '__main__':
 
     max_videos = opt.max_videos_rows
 
-    display_benchmark_results(json_exec_times, max_videos)
+    build_benchmark_results(json_exec_times, max_videos)
