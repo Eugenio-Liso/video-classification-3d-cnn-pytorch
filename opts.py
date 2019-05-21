@@ -3,7 +3,6 @@ import argparse
 
 def parse_opts():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input', default='input', type=str, help='Input file path')
     parser.add_argument('--video_root', default='', type=str, help='Root path of input videos')
     parser.add_argument('--model', default='', type=str, help='Model file path')
     parser.add_argument('--output', default='output.json', type=str, help='Output file path with predictions')
@@ -12,7 +11,8 @@ def parse_opts():
     parser.add_argument('--mode', default='score', type=str,
                         help='Mode (score | feature). score outputs class scores. feature outputs features (after '
                              'global average pooling).')
-    parser.add_argument('--batch_size', default=32, type=int, help='Batch Size')
+    parser.add_argument('--batch_size', default=32, type=int, help='Batch Size (i.e. number of frames to be loaded '
+                                                                   'for each prediction.')
     parser.add_argument('--n_threads', default=4, type=int, help='Number of threads for multi-thread loading')
     parser.add_argument('--model_name', default='resnet', type=str, help='Currently only support resnet')
     parser.add_argument('--model_depth', default=34, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
@@ -25,6 +25,9 @@ def parse_opts():
     parser.add_argument('--prediction_input_mode', default='legacy', type=str,
                         help='If legacy, the input data will be processed with FFMPEG. If opencv, data will be loaded '
                              'with opencv.')
+    parser.add_argument('--type_of_prediction', default='offline', type=str,
+                        help='If offline, the frames will be extracted from the video and predictions will be done on '
+                             'them. If live, predictions will be showed in real time.')
 
     args = parser.parse_args()
 

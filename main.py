@@ -12,11 +12,13 @@ import ctypes
 from opts import parse_opts
 from model import generate_model
 from mean import get_mean
-from classify import classify_video
-import time
+from classify import classify_video_offline
 import gc
 import statistics
 from logging_utils import logger_factory as lf
+import cv2 as cv
+from classify import classify_video_online
+from PIL import Image
 
 logger = lf.getBasicLogger(os.path.basename(__file__))
 
@@ -82,6 +84,7 @@ if __name__ == "__main__":
     logger.info('Input video files: {}'.format(input_video_files))
 
     prediction_input_mode = opt.prediction_input_mode
+    type_of_prediction = opt.type_of_prediction
 
     outputs = []
     executions_times_with_video_names = []
@@ -97,13 +100,71 @@ if __name__ == "__main__":
                 subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
                                 shell=True)
 
-                result, exec_times_with_video_name_on_prediction = classify_video('tmp', input_file, class_names, model,
-                                                                                  opt)
+                result, exec_times_with_video_name_on_prediction = classify_video_offline('tmp', input_file,
+                                                                                          class_names, model,
+                                                                                          opt)
             elif prediction_input_mode == 'opencv':
-                # TODO
-                logger.info("TODO")
-                result = []
-                exec_times_with_video_name_on_prediction = []
+
+                if type_of_prediction == 'offline':
+
+                    vidcap = cv.VideoCapture(video_path)
+
+                    success, image = vidcap.read()
+                    count = 0
+                    while success:
+                        cv.imwrite(os.path.join("tmp", "output_frame%d.jpg" % count),
+                                   image)  # save frame as JPEG file
+
+                        success, image = vidcap.read()
+                        count += 1
+
+                    result, exec_times_with_video_name_on_prediction = \
+                        classify_video_offline('tmp', input_file, class_names, model, opt)
+
+                elif type_of_prediction == 'live':
+                    # Async
+                    # cap = VideoCaptureAsync(video_path)
+                    #
+                    # # Start a separate thread
+                    # cap.start()
+                    #
+                    # # Stop the separate thread for opencv
+                    # cap.stop()
+
+                    cap = cv.VideoCapture(video_path)
+
+                    frame_list = []
+
+                    success, frame = cap.read()
+                    count = 1
+
+                    while success:
+                        cv.imshow('Frames'.format(count), frame)
+                        frame_list.append(frame)
+
+                        # TODO check se sample_duration può essere cambiata (il batch size riguarda il come caricare
+                        #  i frame)
+                        if count % opt.sample_duration == 0:
+                            frames_as_images = [Image.fromarray(np.array(frame), 'RGB') for frame in frame_list]
+
+                            result, exec_times_with_video_name_on_prediction = \
+                                classify_video_online(frames_as_images, count, class_names, model, opt)
+                            frame_list.clear()
+
+                            # Disegna predizione da quel frame in poi, fino alla prossima prediction
+
+                        success, frame = cap.read()
+                        count += 1
+
+                    cv.destroyAllWindows()
+
+                    result = []
+                    exec_times_with_video_name_on_prediction = []
+                else:
+                    raise ValueError(
+                        'Got input parameter for prediction type: ' +
+                        type_of_prediction +
+                        ' but expected one between [offline,live]')
             else:
                 raise ValueError(
                     'Got input parameter for prediction: ' +
