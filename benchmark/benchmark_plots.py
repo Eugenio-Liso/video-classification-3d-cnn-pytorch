@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.join(sys.path[0], "../logging"))
+sys.path.insert(0, os.path.join(sys.path[0], "../logging_utils"))
 
 from math import ceil
 import matplotlib.pyplot as plt

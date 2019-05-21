@@ -1,7 +1,7 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.join(sys.path[0], "../logging"))
+sys.path.insert(0, os.path.join(sys.path[0], "../logging_utils"))
 
 import matplotlib.pyplot as plt
 import json

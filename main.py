@@ -16,7 +16,7 @@ from classify import classify_video
 import time
 import gc
 import statistics
-from logging import logger_factory as lf
+from logging_utils import logger_factory as lf
 
 logger = lf.getBasicLogger(os.path.basename(__file__))
 
