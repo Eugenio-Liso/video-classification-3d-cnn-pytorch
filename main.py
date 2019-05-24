@@ -76,7 +76,7 @@ if __name__ == "__main__":
             class_names.append(row[:-1])
 
     if os.path.exists('tmp'):
-        subprocess.call('rm -rf tmp', shell=True)
+        subprocess.call('rm -f tmp/*', shell=True)
 
     input_video_dir = opt.video_root
     input_video_files = [f for f in listdir(input_video_dir) if isfile(join(input_video_dir, f))]
@@ -94,7 +94,6 @@ if __name__ == "__main__":
             logger.info('Prediction on input file: {}'.format(video_path))
 
             if prediction_input_mode == 'legacy':
-                subprocess.call('mkdir tmp', shell=True)
 
                 # The "{}" are useful to expand path also with spaces
                 subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
@@ -112,7 +111,7 @@ if __name__ == "__main__":
                     success, image = vidcap.read()
                     count = 0
                     while success:
-                        cv.imwrite(os.path.join("tmp", "output_frame%d.jpg" % count),
+                        cv.imwrite(os.path.join("tmp", "image_%05d.jpg" % count),
                                    image)  # save frame as JPEG file
 
                         success, image = vidcap.read()
@@ -123,6 +122,7 @@ if __name__ == "__main__":
 
                 elif type_of_prediction == 'live':
                     # Async
+                    # http://blog.blitzblit.com/2017/12/24/asynchronous-video-capture-in-python-with-opencv/
                     # cap = VideoCaptureAsync(video_path)
                     #
                     # # Start a separate thread
@@ -137,27 +137,36 @@ if __name__ == "__main__":
 
                     success, frame = cap.read()
                     count = 1
+                    text_with_prediction = ''
+
+                    font = cv.FONT_HERSHEY_SIMPLEX
 
                     while success:
-                        cv.imshow('Frames'.format(count), frame)
                         frame_list.append(frame)
 
                         # TODO check se sample_duration può essere cambiata (il batch size riguarda il come caricare
-                        #  i frame)
+                        #  i frame, mentre la sample_duration è la lunghezza della clip)
                         if count % opt.sample_duration == 0:
                             frames_as_images = [Image.fromarray(np.array(frame), 'RGB') for frame in frame_list]
 
                             result, exec_times_with_video_name_on_prediction = \
                                 classify_video_online(frames_as_images, count, class_names, model, opt)
+
+                            text_with_prediction = result[0]
                             frame_list.clear()
 
-                            # Disegna predizione da quel frame in poi, fino alla prossima prediction
+                        cv.putText(frame, text_with_prediction, (10, 10), font, 4, (255, 255, 255), 2, cv.LINE_AA)
+
+                        # Disegna predizione da quel frame in poi, fino alla prossima prediction
+                        cv.imshow('Frame', frame)
 
                         success, frame = cap.read()
                         count += 1
 
+                    cap.release()
                     cv.destroyAllWindows()
 
+                    # TODO riempire
                     result = []
                     exec_times_with_video_name_on_prediction = []
                 else:
@@ -174,7 +183,7 @@ if __name__ == "__main__":
             outputs.append(result)
             executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
 
-            subprocess.call('rm -rf tmp', shell=True)
+            subprocess.call('rm -f tmp/*', shell=True)
 
             # TODO see if this helps with memory
             torch.cuda.empty_cache()
@@ -187,7 +196,7 @@ if __name__ == "__main__":
             logger.info('{} does not exist'.format(input_file))
 
     if os.path.exists('tmp'):
-        subprocess.call('rm -rf tmp', shell=True)
+        subprocess.call('rm -f tmp/*', shell=True)
 
     with open(opt.output, 'w') as f:
         json.dump(outputs, f)

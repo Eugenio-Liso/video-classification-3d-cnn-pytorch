@@ -114,7 +114,7 @@ def classify_video_online(frames_list, current_starting_frame_index, class_names
 
     executions_times = []
 
-    logger.info(input_frames.size())
+    logger.info('Input tensor in live prediction: {}'.format(input_frames.size()))
     inputs = Variable(input_frames, volatile=True)
     start_time = time.time()
 
@@ -128,7 +128,7 @@ def classify_video_online(frames_list, current_starting_frame_index, class_names
 
     prediction_output = outputs.cpu().data
 
-    max_index_predicted_class = prediction_output.max(dim=1)
+    _, max_index_predicted_class = prediction_output.max(dim=1)
 
     predicted_class = class_names[max_index_predicted_class]
 
@@ -136,8 +136,8 @@ def classify_video_online(frames_list, current_starting_frame_index, class_names
                 .format(current_starting_frame_index, current_starting_frame_index + opt.sample_duration - 1,
                         predicted_class))
 
-    # TODO adapt code to return a structure that can be analyzed after (see offline)
-    return "", ""
+    # TODO IF USEFUL, adapt code to return a structure that can be analyzed after (see offline)
+    return [predicted_class], ""
 
 
 # Codice adattato da dataset.py
@@ -160,8 +160,8 @@ def extract_input_live_predictions(current_starting_frame_index, frames_list, op
 
     clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
 
-    # Adding batch ID as first dimension
-    clip = []  # TODO
+    # Adding batch ID as first dimension. Automatically fills it with value 1
+    clip = clip[None, :, :, :, :]
 
     target = torch.IntTensor([current_starting_frame_index, current_starting_frame_index + opt.sample_duration - 1])
 
