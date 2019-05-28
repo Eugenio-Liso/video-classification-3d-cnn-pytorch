@@ -108,9 +108,16 @@ if __name__ == "__main__":
 
                     vidcap = cv.VideoCapture(video_path)
 
+                    logger.info('Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
+                        vidcap.get(5)))
+
                     success, image = vidcap.read()
                     count = 0
                     while success:
+                        cv.imshow('Frame', image)
+
+                        cv.waitKey(1)
+
                         cv.imwrite(os.path.join("tmp", "image_%05d.jpg" % count),
                                    image)  # save frame as JPEG file
 
@@ -132,6 +139,12 @@ if __name__ == "__main__":
                     # cap.stop()
 
                     cap = cv.VideoCapture(video_path)
+
+                    width = int(cap.get(3))
+                    height = int(cap.get(4))
+
+                    logger.info(
+                        'Width = ' + str(width) + ' Height = ' + str(height) + ' fps = ' + str(cap.get(5)))
 
                     frame_list = []
 
@@ -158,7 +171,11 @@ if __name__ == "__main__":
                         cv.putText(frame, text_with_prediction, (10, 10), font, 4, (255, 255, 255), 2, cv.LINE_AA)
 
                         # Disegna predizione da quel frame in poi, fino alla prossima prediction
+                        # cv.namedWindow('Frame', cv.WINDOW_NORMAL)
+                        # cv.resizeWindow('Frame', (width, height))
                         cv.imshow('Frame', frame)
+
+                        cv.waitKey(1)
 
                         success, frame = cap.read()
                         count += 1

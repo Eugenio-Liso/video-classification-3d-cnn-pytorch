@@ -114,7 +114,7 @@ def classify_video_online(frames_list, current_starting_frame_index, class_names
 
     executions_times = []
 
-    logger.info('Input tensor in live prediction: {}'.format(input_frames.size()))
+    logger.debug('Input tensor in live prediction: {}'.format(input_frames.size()))
     inputs = Variable(input_frames, volatile=True)
     start_time = time.time()
 
