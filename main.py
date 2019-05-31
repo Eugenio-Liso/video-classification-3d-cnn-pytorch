@@ -77,6 +77,8 @@ if __name__ == "__main__":
 
     if os.path.exists('tmp'):
         subprocess.call('rm -f tmp/*', shell=True)
+    elif not os.path.exists('tmp'):
+        os.makedirs('tmp')
 
     input_video_dir = opt.video_root
     input_video_files = [f for f in listdir(input_video_dir) if isfile(join(input_video_dir, f))]
@@ -221,7 +223,7 @@ if __name__ == "__main__":
     with open(opt.output, 'w') as f:
         json.dump(outputs, f)
 
-    mean_execution_times = []
+    mean_execution_times = {}
 
     for prediction in executions_times_with_video_names:
         for video_name, exec_times_with_segments in prediction.items():
@@ -230,9 +232,12 @@ if __name__ == "__main__":
             for segment, exec_time in exec_times_with_segments:
                 mean_exec_time.append(exec_time)
 
-            mean_execution_times.append((video_name, statistics.mean(mean_exec_time)))
+            mean_execution_times.update({video_name: statistics.mean(mean_exec_time)})
 
     with open(opt.output_times, 'w') as f:
+        json.dump(executions_times_with_video_names, f)
+
+    with open(opt.output_mean_times, 'w') as f:
         json.dump(mean_execution_times, f)
 
     logger.info("Execution times: {}".format(executions_times_with_video_names))

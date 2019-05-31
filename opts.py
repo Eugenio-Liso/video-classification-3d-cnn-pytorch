@@ -7,7 +7,9 @@ def parse_opts():
     parser.add_argument('--model', default='', type=str, help='Model file path')
     parser.add_argument('--output', default='output.json', type=str, help='Output file path with predictions')
     parser.add_argument('--output_times', default='output_times.json', type=str,
-                        help='Output file path with execution times')
+                        help='Output file path with execution times (taken for each clip)')
+    parser.add_argument('--output_mean_times', default='output_mean_times.json', type=str,
+                        help='Output file path with mean execution times')
     parser.add_argument('--mode', default='score', type=str,
                         help='Mode (score | feature). score outputs class scores. feature outputs features (after '
                              'global average pooling).')

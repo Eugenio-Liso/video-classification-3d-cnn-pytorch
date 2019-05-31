@@ -31,10 +31,10 @@ if __name__ == '__main__':
         video_name = prediction_single_video['video']
         clips = prediction_single_video['clips']
 
-        ground_truth = labels[video_name].casefold()
-
-        if not ground_truth:
+        if video_name not in labels:
             raise ValueError("Video {} not found in ground truth labels".format(video_name))
+
+        ground_truth = labels[video_name].casefold()
 
         total_predictions = len(clips)  # num of predictions done
         correct_predictions = 0

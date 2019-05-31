@@ -21,8 +21,7 @@ if __name__ == '__main__':
     with open(output_json_exec_times_path, 'r') as f:
         json_exec_times = json.load(f)
 
-    for current_video, exec_time_single_video in enumerate(json_exec_times, start=1):
-        plt.figure()
-        bp.extract_data(exec_time_single_video)
+    for exec_time_single_video in json_exec_times:
+        bp.extract_data(exec_time_single_video, True)
 
     bp.display_results()

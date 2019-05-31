@@ -22,7 +22,7 @@ def build_benchmark_results(exec_times, max_videos_in_row):
         columns = 1
     else:
         columns = int(ceil(len(exec_times) / max_videos_in_row))
-    _ = plt.figure()
+    _ = plt.figure('Inference Times')
 
     logger.info(
         "Chart will have {} rows and {} columns. Note that this configuration may be not respected by Matplotlib "
@@ -36,11 +36,13 @@ def build_plot(columns, exec_times, rows):
     for current_video, exec_time_single_video in enumerate(exec_times, start=1):
         plt.subplot(rows, columns, current_video)
 
-        extract_data(exec_time_single_video)
+        extract_data(exec_time_single_video, False)
 
 
-def extract_data(exec_time_single_video):
+def extract_data(exec_time_single_video, single_plot):
     for video, times in exec_time_single_video.items():
+        if single_plot:
+            plt.figure(video)
 
         samples_points_y = []
 
