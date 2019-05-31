@@ -111,13 +111,11 @@ if __name__ == "__main__":
                     logger.info('Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
                         vidcap.get(5)))
 
+                    logger.info("Reading frames...")
+
                     success, image = vidcap.read()
                     count = 0
                     while success:
-                        cv.imshow('Frame', image)
-
-                        cv.waitKey(1)
-
                         cv.imwrite(os.path.join("tmp", "image_%05d.jpg" % count),
                                    image)  # save frame as JPEG file
 
@@ -142,9 +140,12 @@ if __name__ == "__main__":
 
                     width = int(cap.get(3))
                     height = int(cap.get(4))
+                    fps = round(cap.get(5))
 
                     logger.info(
-                        'Width = ' + str(width) + ' Height = ' + str(height) + ' fps = ' + str(cap.get(5)))
+                        'Width = ' + str(width) + ' Height = ' + str(height) + ' fps = ' + str(fps))
+
+                    secondsToWaitBetweenFrames = int((1 / fps) * 1000)
 
                     frame_list = []
 
@@ -152,7 +153,7 @@ if __name__ == "__main__":
                     count = 1
                     text_with_prediction = ''
 
-                    font = cv.FONT_HERSHEY_SIMPLEX
+                    font = cv.FONT_HERSHEY_COMPLEX
 
                     while success:
                         frame_list.append(frame)
@@ -168,14 +169,16 @@ if __name__ == "__main__":
                             text_with_prediction = result[0]
                             frame_list.clear()
 
-                        cv.putText(frame, text_with_prediction, (10, 10), font, 4, (255, 255, 255), 2, cv.LINE_AA)
+                        # Color in BGR!
+                        cv.putText(frame, text_with_prediction, (int(width * 0.40), int(height * 0.10)), font, 1,
+                                   (0, 0, 255), 3, cv.LINE_AA)
 
                         # Disegna predizione da quel frame in poi, fino alla prossima prediction
                         # cv.namedWindow('Frame', cv.WINDOW_NORMAL)
                         # cv.resizeWindow('Frame', (width, height))
                         cv.imshow('Frame', frame)
 
-                        cv.waitKey(1)
+                        cv.waitKey(secondsToWaitBetweenFrames)
 
                         success, frame = cap.read()
                         count += 1
