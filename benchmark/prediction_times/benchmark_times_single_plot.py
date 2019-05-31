@@ -1,13 +1,13 @@
 import sys
 import os
 
-sys.path.insert(0, os.path.join(sys.path[0], "../logging_utils"))
+sys.path.insert(0, os.path.join(sys.path[0], "../../logging_utils"))
 
 import matplotlib.pyplot as plt
 import json
-from opts_benchmark import parse_opts_benchmark
+from opts_pred_times import parse_opts_benchmark
 from logger_factory import getBasicLogger
-import benchmark_plots as bp
+import benchmark_times_plots as bp
 
 logger = getBasicLogger(os.path.basename(__file__))
 
