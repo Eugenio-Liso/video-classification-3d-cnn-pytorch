@@ -98,7 +98,7 @@ if __name__ == "__main__":
             if prediction_input_mode == 'legacy':
 
                 # The "{}" are useful to expand path also with spaces
-                subprocess.call('ffmpeg -hide_banner -loglevel fatal -i "{}" tmp/image_%05d.jpg'.format(video_path),
+                subprocess.call('ffmpeg -hide_banner -loglevel error -i "{}" tmp/image_%05d.jpg'.format(video_path),
                                 shell=True)
 
                 result, exec_times_with_video_name_on_prediction = classify_video_offline('tmp', input_file,
