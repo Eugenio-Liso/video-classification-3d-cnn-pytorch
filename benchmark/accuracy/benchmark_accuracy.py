@@ -14,6 +14,7 @@ if __name__ == '__main__':
     opt = parse_opts_benchmark()
     output_json_predictions = opt.output
     ground_truth_labels = opt.labeled_videos
+    confidence_threshold = opt.confidence_threshold
 
     logger.info("Input json of predictions: {}".format(output_json_predictions))
     logger.info("Input video labels: {}".format(ground_truth_labels))
@@ -38,6 +39,7 @@ if __name__ == '__main__':
 
         total_predictions = len(clips)  # num of predictions done
         correct_predictions = 0
+        true_positives = 0
 
         for single_prediction in clips:
             predicted_label = single_prediction['label'].casefold()  # for ignore case comparisons
@@ -45,6 +47,12 @@ if __name__ == '__main__':
             if predicted_label == ground_truth:
                 correct_predictions += 1
 
+            class_scores = single_prediction['scores']
+            if max(class_scores) >= confidence_threshold:
+                true_positives += 1
+
         final_accuracy = (correct_predictions / total_predictions) * 100
+        precision = (true_positives / total_predictions) * 100
 
         logger.info("Accuracy for video: {} is {}%".format(video_name, final_accuracy))
+        logger.info("Precision for video: {} is {}%".format(video_name, precision))

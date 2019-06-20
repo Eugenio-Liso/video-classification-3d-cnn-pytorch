@@ -7,6 +7,9 @@ def parse_opts_benchmark():
                         help='Output json from prediction phase')
     parser.add_argument('--labeled_videos', default='', type=str,
                         help='A JSON containing a list of tuples (video name, ground truth label)')
+    parser.add_argument('--confidence_threshold', default=10, type=float,
+                        help='If the prediction score is equal or greater than this threshold, than it will be counted '
+                             'as a TP, otherwise as a FP.')
 
     args = parser.parse_args()
 
