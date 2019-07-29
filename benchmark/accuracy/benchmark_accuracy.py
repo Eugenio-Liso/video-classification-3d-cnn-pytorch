@@ -47,9 +47,9 @@ if __name__ == '__main__':
             if predicted_label == ground_truth:
                 correct_predictions += 1
 
-            class_scores = single_prediction['scores']
-            if max(class_scores) >= confidence_threshold:
-                true_positives += 1
+                class_scores = single_prediction['scores']
+                if max(class_scores) >= confidence_threshold:
+                    true_positives += 1
 
         final_accuracy = (correct_predictions / total_predictions) * 100
         precision = (true_positives / total_predictions) * 100
