@@ -6,18 +6,17 @@ In the feature mode, this code outputs features of 512 dims (after global averag
 
 **Torch (Lua) version of this code is available [here](https://github.com/kenshohara/video-classification-3d-cnn).**
 
+- https://github.com/kenshohara/3D-ResNets-PyTorch (MODELLO PER INFERENCE: https://github.com/kenshohara/video-classification-3d-cnn-pytorch) con paper https://arxiv.org/abs/1708.07632 + https://arxiv.org/abs/1711.09577
+
 ## Requirements
-* [PyTorch](http://pytorch.org/)
-```
-conda install pytorch torchvision cuda80 -c soumith
-```
-* FFmpeg, FFprobe
-```
-wget http://johnvansickle.com/ffmpeg/releases/ffmpeg-release-64bit-static.tar.xz
-tar xvf ffmpeg-release-64bit-static.tar.xz
-cd ./ffmpeg-3.3.3-64bit-static/; sudo cp ffmpeg ffprobe /usr/local/bin;
-```
-* Python 3
+- Setup env
+
+  ```bash
+  conda install matplotlib=3.0.3 pytorch=1.0.0 torchvision=0.2.1 cuda80=1.0 -c soumith
+  conda install pip
+  pip install opencv-python==3.4.5.20
+  ```
+- FFmpeg, FFprobe
 
 ## Preparation
 * Download this code.
@@ -25,28 +24,29 @@ cd ./ffmpeg-3.3.3-64bit-static/; sudo cp ffmpeg ffprobe /usr/local/bin;
   * ResNeXt-101 achieved the best performance in our experiments. (See [paper](https://arxiv.org/abs/1711.09577) in details.)
 
 ## Usage
-Assume input video files are located in ```./videos```.
+```bash
+# With custom classes. Resnet 101. Live predictions
+python main.py \
+--video_root ./videos \
+--model ... \
+--mode score \
+--model_name resnet \
+--model_depth 101 \
+--resnet_shortcut B \
+--type_of_prediction live \
+--class_names_list classes_list/class_names_list_thesis
 
-To calculate class scores for each 16 frames, use ```--mode score```.
-```
-python main.py --input ./input --video_root ./videos --output ./output.json --model ./resnet-34-kinetics.pth --mode score
+# Kinetics classes. Resnet 101. Live predictions
+python main.py \
+--video_root ./videos \
+--model ... \
+--mode score \
+--model_name resnet \
+--model_depth 101 \
+--resnet_shortcut B \
+--type_of_prediction live \
+--class_names_list classes_list/class_names_list_kinetics
 ```
 To visualize the classification results, use ```generate_result_video/generate_result_video.py```.
 
-To calculate video features for each 16 frames, use ```--mode feature```.
-```
-python main.py --input ./input --video_root ./videos --output ./output.json --model ./resnet-34-kinetics.pth --mode feature
-```
-
-
-## Citation
-If you use this code, please cite the following:
-```
-@article{hara3dcnns,
-  author={Kensho Hara and Hirokatsu Kataoka and Yutaka Satoh},
-  title={Can Spatiotemporal 3D CNNs Retrace the History of 2D CNNs and ImageNet?},
-  journal={arXiv preprint},
-  volume={arXiv:1711.09577},
-  year={2017},
-}
-```
+Also, take a look at the various scripts in the `benchmark` folder.
