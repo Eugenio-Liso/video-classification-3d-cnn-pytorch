@@ -143,10 +143,6 @@ def classify_video_online(frames_list, current_starting_frame_index, class_names
 # Codice adattato da dataset.py
 # TODO ma a che serve restituire segments (i.e. tensore costruito ad hoc? Solo per visualizzazione risultati??)
 def extract_input_live_predictions(current_starting_frame_index, frames_list, opt):
-    batch_size = opt.batch_size
-
-    # Non ha senso utilizzare batch size > 1 perchè stiamo facendo predizioni su ogni batch di frame (16 by default)
-    assert batch_size == 1
 
     # TODO check se ha senso Scale + Crop stessa dimensione
     spatial_transform = Compose([Scale(opt.sample_size),
