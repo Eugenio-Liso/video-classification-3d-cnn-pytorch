@@ -59,21 +59,26 @@ if __name__ == "__main__":
     opt.arch = '{}-{}'.format(opt.model_name, opt.model_depth)
     opt.sample_size = 112
     opt.sample_duration = 16
-    opt.n_classes = 400
+
+    class_names_list = opt.class_names_list
+
+    class_names = []
+    n_classes = 0
+    with open(class_names_list) as f:
+        for row in f:
+            class_names.append(row[:-1])
+            n_classes += 1
+
+    opt.n_classes = n_classes
 
     model = generate_model(opt)
     logger.info('Loading model in: {}'.format(opt.model))
     model_data = torch.load(opt.model)
-    assert opt.arch == model_data['arch']
+    # assert opt.arch == model_data['arch']
     model.load_state_dict(model_data['state_dict'])
     model.eval()
     if opt.verbose:
         logger.info(model)
-
-    class_names = []
-    with open('class_names_list') as f:
-        for row in f:
-            class_names.append(row[:-1])
 
     if os.path.exists('tmp'):
         subprocess.call('rm -f tmp/*', shell=True)

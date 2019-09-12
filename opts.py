@@ -6,6 +6,8 @@ def parse_opts():
     parser.add_argument('--video_root', default='', type=str, help='Root path of input videos')
     parser.add_argument('--model', default='', type=str, help='Model file path')
     parser.add_argument('--output', default='output.json', type=str, help='Output file path with predictions')
+    parser.add_argument('--class_names_list', default='./classes_list/class_names_list_kinetics', type=str,
+                        help='File containing predictions classes')
     parser.add_argument('--output_times', default='output_times.json', type=str,
                         help='Output file path with execution times (taken for each clip)')
     parser.add_argument('--output_mean_times', default='output_mean_times.json', type=str,
