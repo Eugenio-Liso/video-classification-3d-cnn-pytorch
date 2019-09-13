@@ -66,7 +66,8 @@ if __name__ == "__main__":
     n_classes = 0
     with open(class_names_list) as f:
         for row in f:
-            class_names.append(row[:-1])
+            class_name = row[:-1]
+            class_names.append(class_name)
             n_classes += 1
 
     opt.n_classes = n_classes
