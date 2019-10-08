@@ -11,6 +11,17 @@ from sklearn.metrics import precision_recall_fscore_support
 
 logger = getBasicLogger(os.path.basename(__file__))
 
+
+def create_column_metric_csv_header(column_prefix, class_names, header):
+    for target_class in class_names:
+        header.append(f"{column_prefix}_{target_class}")
+
+
+def create_column_metric_csv_content(contents, csv_row):
+    for result in contents:
+        csv_row.append(result)
+
+
 if __name__ == '__main__':
 
     opt = parse_opts_benchmark()
@@ -36,10 +47,16 @@ if __name__ == '__main__':
 
     if os.path.exists(output_csv):
         os.remove(output_csv)
-    else:
-        with open(output_csv, 'w+') as csv_file:
-            writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(["VIDEO_NAME", "ACCURACY", "PRECISION", "RECALL", "F-SCORE"])
+
+    with open(output_csv, 'w+') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        header = ["VIDEO_NAME", "ACCURACY"]
+
+        create_column_metric_csv_header("PRECISION", class_names, header)
+        create_column_metric_csv_header("RECALL", class_names, header)
+        create_column_metric_csv_header("F-SCORE", class_names, header)
+
+        writer.writerow(header)
 
     assert len(json_predictions) == len(labels), \
         "Labels size must be equal to output json size, i.e. one label per video prediction "
@@ -83,5 +100,10 @@ if __name__ == '__main__':
 
         with open(output_csv, 'a') as csv_file:
             writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_row = [video_name, final_accuracy]
 
-            writer.writerow([video_name, final_accuracy, precision, recall, fscore])
+            create_column_metric_csv_content(precision, csv_row)
+            create_column_metric_csv_content(recall, csv_row)
+            create_column_metric_csv_content(fscore, csv_row)
+
+            writer.writerow(csv_row)
