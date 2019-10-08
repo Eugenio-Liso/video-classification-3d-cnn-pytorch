@@ -4,8 +4,9 @@ import sys
 sys.path.insert(0, os.path.join(sys.path[0], "../../logging_utils"))
 
 import json
-from opts_accuracy import parse_opts_benchmark
+from opts_metrics import parse_opts_benchmark
 from logger_factory import getBasicLogger
+import csv
 
 logger = getBasicLogger(os.path.basename(__file__))
 
@@ -15,7 +16,7 @@ if __name__ == '__main__':
     output_json_predictions = opt.output
     ground_truth_labels = opt.labeled_videos
     confidence_threshold = opt.confidence_threshold
-
+    classes_list = opt.classes_list
     logger.info("Input json of predictions: {}".format(output_json_predictions))
     logger.info("Input video labels: {}".format(ground_truth_labels))
 
@@ -24,6 +25,11 @@ if __name__ == '__main__':
 
     with open(ground_truth_labels, 'r') as f:
         labels = json.load(f)
+
+    with open(classes_list, 'r') as f:
+        class_names = []
+        for row in f:
+            class_names.append(row[:-1])
 
     assert len(json_predictions) == len(labels), \
         "Labels size must be equal to output json size, i.e. one label per video prediction "

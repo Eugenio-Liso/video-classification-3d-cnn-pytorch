@@ -2,6 +2,8 @@
 
 ## Log file
 
+# TODO
+
 ```python
 python benchmark/accuracy/benchmark_accuracy.py --output <output_json_with_predictions> --labeled_videos <file_containing_labels> [--confidence_threshold 10]
 ```
