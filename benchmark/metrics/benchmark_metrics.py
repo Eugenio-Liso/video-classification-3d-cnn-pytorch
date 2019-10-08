@@ -27,9 +27,9 @@ if __name__ == '__main__':
     opt = parse_opts_benchmark()
     output_json_predictions = opt.output
     ground_truth_labels = opt.labeled_videos
-    confidence_threshold = opt.confidence_threshold
     classes_list = opt.classes_list
     output_csv = opt.csv
+    output_mean_times = opt.output_mean_times
 
     logger.info("Input json of predictions: {}".format(output_json_predictions))
     logger.info("Input video labels: {}".format(ground_truth_labels))
@@ -39,6 +39,9 @@ if __name__ == '__main__':
 
     with open(ground_truth_labels, 'r') as f:
         labels = json.load(f)
+
+    with open(output_mean_times, 'r') as f:
+        output_mean_times_json = json.load(f)
 
     with open(classes_list, 'r') as f:
         class_names = []
@@ -50,7 +53,7 @@ if __name__ == '__main__':
 
     with open(output_csv, 'w+') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        header = ["VIDEO_NAME", "ACCURACY"]
+        header = ["VIDEO_NAME", "MEAN_PREDICTION_TIME", "ACCURACY"]
 
         create_column_metric_csv_header("PRECISION", class_names, header)
         create_column_metric_csv_header("RECALL", class_names, header)
@@ -93,14 +96,15 @@ if __name__ == '__main__':
 
         final_accuracy = (correct_predictions / total_predictions)
 
+        logger.info("Mean Prediction Time for video: {} is {}".format(video_name, output_mean_times_json[video_name]))
         logger.info("Accuracy for video: {} is {}%".format(video_name, final_accuracy))
-        logger.info("Precision for video: {} is {}%".format(video_name, precision))
-        logger.info("Recall for video: {} is {}%".format(video_name, recall))
-        logger.info("F-Score for video: {} is {}%".format(video_name, fscore))
+        logger.info("Precision for video: {} is {}".format(video_name, precision))
+        logger.info("Recall for video: {} is {}".format(video_name, recall))
+        logger.info("F-Score for video: {} is {}".format(video_name, fscore))
 
         with open(output_csv, 'a') as csv_file:
             writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_row = [video_name, final_accuracy]
+            csv_row = [video_name, output_mean_times_json[video_name], final_accuracy]
 
             create_column_metric_csv_content(precision, csv_row)
             create_column_metric_csv_content(recall, csv_row)
