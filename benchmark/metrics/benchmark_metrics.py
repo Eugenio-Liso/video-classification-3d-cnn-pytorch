@@ -7,6 +7,7 @@ import json
 from opts_metrics import parse_opts_benchmark
 from logger_factory import getBasicLogger
 import csv
+from sklearn.metrics import precision_recall_fscore_support
 
 logger = getBasicLogger(os.path.basename(__file__))
 
@@ -17,6 +18,8 @@ if __name__ == '__main__':
     ground_truth_labels = opt.labeled_videos
     confidence_threshold = opt.confidence_threshold
     classes_list = opt.classes_list
+    output_csv = opt.csv
+
     logger.info("Input json of predictions: {}".format(output_json_predictions))
     logger.info("Input video labels: {}".format(ground_truth_labels))
 
@@ -30,6 +33,13 @@ if __name__ == '__main__':
         class_names = []
         for row in f:
             class_names.append(row[:-1])
+
+    if os.path.exists(output_csv):
+        os.remove(output_csv)
+    else:
+        with open(output_csv, 'w+') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(["VIDEO_NAME", "ACCURACY", "PRECISION", "RECALL", "F-SCORE"])
 
     assert len(json_predictions) == len(labels), \
         "Labels size must be equal to output json size, i.e. one label per video prediction "
@@ -47,18 +57,31 @@ if __name__ == '__main__':
         correct_predictions = 0
         true_positives = 0
 
+        predicted_labels_for_single_video = []
+
         for single_prediction in clips:
             predicted_label = single_prediction['label'].casefold()  # for ignore case comparisons
 
             if predicted_label == ground_truth:
                 correct_predictions += 1
 
-                class_scores = single_prediction['scores']
-                if max(class_scores) >= confidence_threshold:
-                    true_positives += 1
+            predicted_labels_for_single_video.append(predicted_label)
 
-        final_accuracy = (correct_predictions / total_predictions) * 100
-        precision = (true_positives / total_predictions) * 100
+        ground_truth_list_repeated = [ground_truth] * len(predicted_labels_for_single_video)
+
+        precision, recall, fscore, _ = \
+            precision_recall_fscore_support(ground_truth_list_repeated,
+                                            predicted_labels_for_single_video,
+                                            labels=class_names)
+
+        final_accuracy = (correct_predictions / total_predictions)
 
         logger.info("Accuracy for video: {} is {}%".format(video_name, final_accuracy))
         logger.info("Precision for video: {} is {}%".format(video_name, precision))
+        logger.info("Recall for video: {} is {}%".format(video_name, recall))
+        logger.info("F-Score for video: {} is {}%".format(video_name, fscore))
+
+        with open(output_csv, 'a') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+            writer.writerow([video_name, final_accuracy, precision, recall, fscore])
