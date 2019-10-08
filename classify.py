@@ -21,20 +21,20 @@ def classify_video_offline(video_dir, video_name, class_names, model, opt):
     video_segments = []
     executions_times = []
 
-    for i, (inputs, segments) in enumerate(data_loader):
-        inputs = Variable(inputs, volatile=True)
-        start_time = time.time()
+    with torch.no_grad():
+        for i, (inputs, segments) in enumerate(data_loader):
+            start_time = time.time()
 
-        outputs = model(inputs)
-        end_time = time.time()
+            outputs = model(inputs)
+            end_time = time.time()
 
-        execution_time = end_time - start_time
+            execution_time = end_time - start_time
 
-        print("--- Execution time for segment {}: {} seconds ---".format(segments, execution_time))
-        executions_times.append(execution_time)
+            print("--- Execution time for segment {}: {} seconds ---".format(segments, execution_time))
+            executions_times.append(execution_time)
 
-        video_outputs.append(outputs.cpu().data)
-        video_segments.append(segments)
+            video_outputs.append(outputs.cpu().data)
+            video_segments.append(segments)
 
     video_outputs = torch.cat(video_outputs)
     video_segments = torch.cat(video_segments)
@@ -89,7 +89,7 @@ def classify_video_offline(video_dir, video_name, class_names, model, opt):
 
 
 def create_dataset_offline(opt, video_dir):
-    batch_size = opt.batch_size
+    batch_size = opt.batch_size_multiplier
 
     # TODO check se ha senso Scale + Crop stessa dimensione
     spatial_transform = Compose([Scale(opt.sample_size),
@@ -143,6 +143,10 @@ def classify_video_online(frames_list, current_starting_frame_index, class_names
 # Codice adattato da dataset.py
 # TODO ma a che serve restituire segments (i.e. tensore costruito ad hoc? Solo per visualizzazione risultati??)
 def extract_input_live_predictions(current_starting_frame_index, frames_list, opt):
+    batch_size = opt.batch_size_multiplier
+
+    # Non ha senso utilizzare batch size > 1 perchè stiamo facendo predizioni su ogni batch di frame (16 by default)
+    assert batch_size == 1
 
     # TODO check se ha senso Scale + Crop stessa dimensione
     spatial_transform = Compose([Scale(opt.sample_size),

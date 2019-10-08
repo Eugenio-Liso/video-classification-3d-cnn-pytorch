@@ -15,8 +15,12 @@ def parse_opts():
     parser.add_argument('--mode', default='score', type=str,
                         help='Mode (score | feature). score outputs class scores. feature outputs features (after '
                              'global average pooling).')
-    parser.add_argument('--batch_size', default=32, type=int, help='Batch Size (i.e. number of frames to be loaded '
-                                                                   'for each prediction.')
+    parser.add_argument('--batch_size_multiplier', default=1, type=int,
+                        help='Batch Size multiplier. For example, if 2 it'
+                             'means that the DataLoader will load sample_duration x 2 frames'
+                             'at a time')
+    parser.add_argument('--sample_duration', default=16, type=int,
+                        help='The sample duration, i.e. how many frames to take when predicting')
     parser.add_argument('--n_threads', default=4, type=int, help='Number of threads for multi-thread loading')
     parser.add_argument('--model_name', default='resnet', type=str, help='Currently only support resnet')
     parser.add_argument('--model_depth', default=34, type=int, help='Depth of resnet (10 | 18 | 34 | 50 | 101)')
