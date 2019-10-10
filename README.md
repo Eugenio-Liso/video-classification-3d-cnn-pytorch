@@ -12,7 +12,7 @@ In the feature mode, this code outputs features of 512 dims (after global averag
 - Setup env (with Python 3.7.x)
 
   ```bash
-  conda install matplotlib=3.0.3 scikit-learn=0.21.2 pytorch=1.0.0 torchvision=0.2.1 cuda80=1.0 -c soumith
+  conda install seaborn=0.9.0 matplotlib=3.0.3 scikit-learn=0.21.2 pytorch=1.0.0 torchvision=0.2.1 cuda80=1.0 -c soumith
   conda install pip
   pip install opencv-python==3.4.5.20
   ```

@@ -3,7 +3,8 @@ import csv
 import matplotlib.pyplot as plt
 import numpy as np
 from opts_metrics_plot import parse_opts_metrics_plot
-
+import seaborn as sns
+sns.set()
 
 # from matplotlib.ticker import FormatStrFormatter
 
