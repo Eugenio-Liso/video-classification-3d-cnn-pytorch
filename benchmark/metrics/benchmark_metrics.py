@@ -8,7 +8,7 @@ from opts_metrics import parse_opts_benchmark
 from logger_factory import getBasicLogger
 import csv
 from sklearn.metrics import precision_recall_fscore_support
-from metrics_aggregator import AverageMetricsNumPyArray, SimpleAverage
+from metrics_aggregator import SimpleAverage
 
 logger = getBasicLogger(os.path.basename(__file__))
 
@@ -67,9 +67,8 @@ if __name__ == '__main__':
 
         average_accuracy = SimpleAverage()
         average_mean_time = SimpleAverage()
-        average_precision = AverageMetricsNumPyArray(class_names)
-        average_recall = AverageMetricsNumPyArray(class_names)
-        average_fscore = AverageMetricsNumPyArray(class_names)
+        predicted_labels = []
+        target_labels = []
 
         for prediction_single_video in json_predictions:
             video_name = prediction_single_video['video']
@@ -82,7 +81,6 @@ if __name__ == '__main__':
 
             total_predictions = len(clips)  # num of predictions done
             correct_predictions = 0
-            true_positives = 0
 
             predicted_labels_for_single_video = []
 
@@ -110,11 +108,10 @@ if __name__ == '__main__':
             logger.info("Recall for video: {} is {}".format(video_name, recall))
             logger.info("F-Score for video: {} is {}".format(video_name, fscore))
 
-            average_accuracy.update(final_accuracy)
+            average_accuracy.update(correct_predictions, total_predictions)
             average_mean_time.update(mean_time_for_video)
-            average_precision.update(precision, ground_truth)
-            average_recall.update(recall, ground_truth)
-            average_fscore.update(fscore, ground_truth)
+            predicted_labels.extend(predicted_labels_for_single_video)
+            target_labels.extend(ground_truth_list_repeated)
 
             csv_row = [video_name, output_mean_times_json[video_name], final_accuracy]
 
@@ -128,14 +125,16 @@ if __name__ == '__main__':
 
         avg_accuracy = average_accuracy.average()
         avg_mean_time = average_mean_time.average()
-        avg_precision = average_precision.average()
-        avg_recall = average_recall.average()
-        avg_fscore = average_fscore.average()
+
+        precision, recall, fscore, _ = \
+            precision_recall_fscore_support(target_labels,
+                                            predicted_labels,
+                                            labels=class_names)
 
         final_row = ['Mean_metrics_for_videos', avg_mean_time, avg_accuracy]
 
-        create_column_metric_csv_content(avg_precision, final_row)
-        create_column_metric_csv_content(avg_recall, final_row)
-        create_column_metric_csv_content(avg_fscore, final_row)
+        create_column_metric_csv_content(precision, final_row)
+        create_column_metric_csv_content(recall, final_row)
+        create_column_metric_csv_content(fscore, final_row)
 
         writer.writerow(final_row)
