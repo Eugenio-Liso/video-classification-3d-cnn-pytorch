@@ -8,6 +8,9 @@ from opts_metrics import parse_opts_benchmark
 from logger_factory import getBasicLogger
 import csv
 from sklearn.metrics import precision_recall_fscore_support
+import matplotlib.pyplot as plt
+import numpy as np
+from metrics_aggregator import AverageMetricsNumPyArray, AverageTimes, AverageAccuracy
 
 logger = getBasicLogger(os.path.basename(__file__))
 
@@ -28,7 +31,7 @@ if __name__ == '__main__':
     output_json_predictions = opt.output
     ground_truth_labels = opt.labeled_videos
     classes_list = opt.classes_list
-    output_csv = opt.csv
+    output_csv = opt.output_csv
     output_mean_times = opt.output_mean_times
 
     logger.info("Input json of predictions: {}".format(output_json_predictions))
@@ -64,6 +67,14 @@ if __name__ == '__main__':
     assert len(json_predictions) == len(labels), \
         "Labels size must be equal to output json size, i.e. one label per video prediction "
 
+    _ = plt.figure('Testing Metrics')
+
+    average_accuracy = AverageAccuracy()
+    average_mean_time = AverageTimes()
+    average_precision = AverageMetricsNumPyArray(class_names)
+    average_recall = AverageMetricsNumPyArray(class_names)
+    average_fscore = AverageMetricsNumPyArray(class_names)
+
     for prediction_single_video in json_predictions:
         video_name = prediction_single_video['video']
         clips = prediction_single_video['clips']
@@ -95,19 +106,41 @@ if __name__ == '__main__':
                                             labels=class_names)
 
         final_accuracy = (correct_predictions / total_predictions)
+        mean_time_for_video = output_mean_times_json[video_name]
 
-        logger.info("Mean Prediction Time for video: {} is {}".format(video_name, output_mean_times_json[video_name]))
+        logger.info("Mean Prediction Time for video: {} is {}".format(video_name, mean_time_for_video))
         logger.info("Accuracy for video: {} is {}%".format(video_name, final_accuracy))
         logger.info("Precision for video: {} is {}".format(video_name, precision))
         logger.info("Recall for video: {} is {}".format(video_name, recall))
         logger.info("F-Score for video: {} is {}".format(video_name, fscore))
 
+        average_accuracy.update(final_accuracy, total_predictions)
+        average_mean_time.update(mean_time_for_video)
+        average_precision.update(precision, ground_truth)
+        average_recall.update(recall, ground_truth)
+        average_fscore.update(fscore, ground_truth)
+
+        csv_row = [video_name, output_mean_times_json[video_name], final_accuracy]
+
+        create_column_metric_csv_content(precision, csv_row)
+        create_column_metric_csv_content(recall, csv_row)
+        create_column_metric_csv_content(fscore, csv_row)
+
         with open(output_csv, 'a') as csv_file:
             writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_row = [video_name, output_mean_times_json[video_name], final_accuracy]
-
-            create_column_metric_csv_content(precision, csv_row)
-            create_column_metric_csv_content(recall, csv_row)
-            create_column_metric_csv_content(fscore, csv_row)
-
             writer.writerow(csv_row)
+
+    avg_accuracy = average_accuracy.average
+    avg_mean_time = average_mean_time.average
+    avg_precision = average_precision.average
+    avg_recall = average_recall.average
+    avg_fscore = average_fscore.average
+
+    final_row = ['Total metrics for videos', avg_mean_time, average_accuracy]
+
+    # Aggiungere aggregati per classe per metrica
+    # writer.writerow(final_row)
+
+    x_axis = np.arange(len(class_names))
+    plt.xticks(x_axis, class_names)
+    plt.show()
