@@ -1,12 +1,16 @@
-# Accuracy 
+# Metrics 
 
-## Log file
-
-# TODO
+## Generate CSV containing the metrics
 
 ```python
-python benchmark/accuracy/benchmark_accuracy.py --output <output_json_with_predictions> --labeled_videos <file_containing_labels> [--confidence_threshold 10]
+python benchmark/metrics/benchmark_metrics.py \
+--output <output json from testing> \
+--labeled_videos <labels_file> \
+--classes_list <class_list file> \
+--output_mean_times <output_times from testing>
 ```
+
+The classes list file is a simple file containing a set of labels, one per row.
 
 The labels file contains a JSON with the following structure:
 
@@ -22,6 +26,10 @@ The video name must match the one you used in the prediction phase.
 
 The label must be a valid label (i.e. one that can be predicted).
 
-The confidence threshold is used to output a more solid metric on how the model is performing. 
-If a score is equal or higher than the specified threshold (it has a default value specified in `opts_accuracy.py`),
-then it is considered as a true positive, otherwise it is a false positive.
+# Plotting the results
+
+```python
+python benchmark/metrics/plot_metrics.py \
+--input_csv <csv produced by previous script> \
+--classes_list <class_list file>
+```
