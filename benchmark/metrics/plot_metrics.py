@@ -1,8 +1,12 @@
-import matplotlib.pyplot as plt
-from opts_metrics_plot import parse_opts_metrics_plot
 import csv
+
+import matplotlib.pyplot as plt
 import numpy as np
+from opts_metrics_plot import parse_opts_metrics_plot
+
+
 # from matplotlib.ticker import FormatStrFormatter
+
 
 def get_metric(class_names, idx_metrics, row):
     result = []
@@ -16,8 +20,14 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title):
     _ = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    plt.bar(x_axis, classes_metric)
+    barlist = plt.bar(x_axis, classes_metric)
     plt.xticks(x_axis, class_names)
+
+    # Think of a general way to actually change colors dynamically
+    if len(classes_metric) == 3:
+        barlist[0].set_color('b')
+        barlist[1].set_color('g')
+        barlist[2].set_color('r')
 
     plt.title(title)
 
