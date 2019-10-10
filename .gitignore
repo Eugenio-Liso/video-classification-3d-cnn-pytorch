@@ -109,3 +109,4 @@ generate_result_video/videos_pred
 *.pth
 
 *.csv
+**/logs/
