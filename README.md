@@ -36,7 +36,7 @@ python main.py \
 --type_of_prediction live \
 --class_names_list classes_list/class_names_list_thesis
 
-# Kinetics classes. Resnet 101. Live predictions
+# Kinetics classes. Resnet 101. Offline predictions
 python main.py \
 --video_root ./videos \
 --model ... \
@@ -44,9 +44,9 @@ python main.py \
 --model_name resnet \
 --model_depth 101 \
 --resnet_shortcut B \
---type_of_prediction live \
+--type_of_prediction offline \
 --class_names_list classes_list/class_names_list_kinetics
 ```
-To visualize the classification results, use ```generate_result_video/generate_result_video.py```.
+To visualize the classification results directly on videos, use ```generate_result_video/generate_result_video.py```.
 
-Also, take a look at the various scripts in the `benchmark` folder.
+Also, take a look at the various scripts in the `benchmark` folder on how to plot various prediction statistics.
