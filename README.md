@@ -9,7 +9,7 @@ In the feature mode, this code outputs features of 512 dims (after global averag
 - https://github.com/kenshohara/3D-ResNets-PyTorch (MODELLO PER INFERENCE: https://github.com/kenshohara/video-classification-3d-cnn-pytorch) con paper https://arxiv.org/abs/1708.07632 + https://arxiv.org/abs/1711.09577
 
 ## Requirements
-- Setup env
+- Setup env (with Python 3.7.x)
 
   ```bash
   conda install matplotlib=3.0.3 scikit-learn=0.21.2 pytorch=1.0.0 torchvision=0.2.1 cuda80=1.0 -c soumith
