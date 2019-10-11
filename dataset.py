@@ -93,11 +93,23 @@ def make_dataset(video_path, sample_duration):
     }
 
     step = sample_duration
-    for i in range(1, (n_frames - sample_duration + 1), step):
+
+    max_index = (n_frames + 1)
+    idx = 1
+    while idx < max_index:
+        lookahead = idx + step
         sample_i = copy.deepcopy(sample)
-        sample_i['frame_indices'] = list(range(i, i + sample_duration))
-        sample_i['segment'] = torch.IntTensor([i, i + sample_duration - 1])
+
+        if lookahead > n_frames:
+            new_start_idx = idx - (lookahead - max_index)
+            sample_i['frame_indices'] = list(range(new_start_idx, new_start_idx + sample_duration))
+            sample_i['segment'] = torch.IntTensor([new_start_idx, new_start_idx + sample_duration - 1])
+        else:
+            sample_i['frame_indices'] = list(range(idx, idx + sample_duration))
+            sample_i['segment'] = torch.IntTensor([idx, idx + sample_duration - 1])
+
         dataset.append(sample_i)
+        idx = lookahead
 
     return dataset
 
