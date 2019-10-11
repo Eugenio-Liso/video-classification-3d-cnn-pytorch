@@ -24,6 +24,12 @@ In the feature mode, this code outputs features of 512 dims (after global averag
   * ResNeXt-101 achieved the best performance in our experiments. (See [paper](https://arxiv.org/abs/1711.09577) in details.)
 
 ## Simple Usage
+
+The simple usage of this script is to do predictions on one or multiple videos. The folder `videos` should
+contain them.
+
+Change the parameter accordingly.
+
 ```bash
 # With custom classes. Resnet 101. Live predictions
 python main.py \
@@ -47,9 +53,6 @@ python main.py \
 --type_of_prediction offline \
 --class_names_list classes_list/class_names_list_kinetics
 ```
-To visualize the classification results directly on videos, use ```generate_result_video/generate_result_video.py```.
-
-Also, take a look at the various scripts in the `benchmark` folder on how to plot various prediction statistics.
 
 # Advanced usage
 
@@ -94,3 +97,9 @@ Also, take a look at the various scripts in the `benchmark` folder on how to plo
     --class_names_list classes_list/class_names_list_thesis \
     --frames
    ```
+   
+# Evaluate prediction quality
+
+To visualize the classification results directly on videos, use ```generate_result_video/generate_result_video.py```.
+
+Also, take a look at the various scripts in the `benchmark` folder on how to plot various prediction statistics.

@@ -11,5 +11,5 @@ python benchmark/prediction_times/benchmark_times_plots.py --output_times <json_
 python benchmark/prediction_times/benchmark_times_single_plot.py --output_times <json_with_exec_times> 
 ```
 
-The `json_with_exec_times` is an output of the prediction phase. It can contain more than one prediction per video
+The `json_with_exec_times` is an output of the prediction phase. It can contain more than one prediction per video. 
 `max_videos_rows` specifies how many charts will be displayed in a row
