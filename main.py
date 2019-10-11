@@ -1,6 +1,4 @@
 import os
-from os import listdir
-from os.path import isfile, join
 import sys
 import json
 import subprocess
@@ -58,6 +56,7 @@ if __name__ == "__main__":
     opt.mean = get_mean()
     opt.arch = '{}-{}'.format(opt.model_name, opt.model_depth)
     opt.sample_size = 112
+    using_frames = opt.frames
 
     class_names_list = opt.class_names_list
 
@@ -86,141 +85,156 @@ if __name__ == "__main__":
         os.makedirs('tmp')
 
     input_video_dir = opt.video_root
-    input_video_files = [f for f in listdir(input_video_dir) if isfile(join(input_video_dir, f))]
+    input_video_files = [f for f in os.listdir(input_video_dir) if os.path.isfile(os.path.join(input_video_dir, f))]
 
-    logger.info('Input video files: {}'.format(input_video_files))
+    logger.info('Input video files (empty if using --frames): {}'.format(input_video_files))
 
     prediction_input_mode = opt.prediction_input_mode
     type_of_prediction = opt.type_of_prediction
 
     outputs = []
     executions_times_with_video_names = []
-    for input_file in input_video_files:
-        video_path = os.path.join(input_video_dir, input_file)
-        if os.path.exists(video_path):
-            logger.info('Prediction on input file: {}'.format(video_path))
 
-            if prediction_input_mode == 'legacy':
+    if using_frames:
+        for target_class in os.listdir(input_video_dir):
+            target_dir = os.path.join(input_video_dir, target_class)
 
-                # The "{}" are useful to expand path also with spaces
-                subprocess.call('ffmpeg -hide_banner -loglevel error -i "{}" tmp/image_%05d.jpg'.format(video_path),
-                                shell=True)
+            for video_id in os.listdir(target_dir):
+                video_dir = os.path.join(target_dir, video_id)
 
-                result, exec_times_with_video_name_on_prediction = classify_video_offline('tmp', input_file,
-                                                                                          class_names, model,
-                                                                                          opt)
-            elif prediction_input_mode == 'opencv':
+                result, exec_times_with_video_name_on_prediction = \
+                    classify_video_offline(video_dir, video_id, class_names, model, opt)
 
-                if type_of_prediction == 'offline':
+                outputs.append(result)
+                executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
+    else:
+        for input_file in input_video_files:
+            video_path = os.path.join(input_video_dir, input_file)
+            if os.path.exists(video_path):
+                logger.info('Prediction on input: {}'.format(video_path))
 
-                    vidcap = cv.VideoCapture(video_path)
+                if prediction_input_mode == 'legacy':
 
-                    logger.info('Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
-                        vidcap.get(5)))
+                    # The "{}" are useful to expand path also with spaces
+                    subprocess.call('ffmpeg -hide_banner -loglevel error -i "{}" tmp/image_%05d.jpg'.format(video_path),
+                                    shell=True)
 
-                    logger.info("Reading frames...")
+                    result, exec_times_with_video_name_on_prediction = classify_video_offline('tmp', input_file,
+                                                                                              class_names, model,
+                                                                                              opt)
+                elif prediction_input_mode == 'opencv':
 
-                    success, image = vidcap.read()
-                    count = 0
-                    while success:
-                        cv.imwrite(os.path.join("tmp", "image_%05d.jpg" % count),
-                                   image)  # save frame as JPEG file
+                    if type_of_prediction == 'offline':
+
+                        input_dir = "tmp"
+                        vidcap = cv.VideoCapture(video_path)
+
+                        logger.info('Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
+                            vidcap.get(5)))
+
+                        logger.info("Reading frames...")
 
                         success, image = vidcap.read()
-                        count += 1
+                        count = 0
+                        while success:
+                            cv.imwrite(os.path.join(input_dir, "image_%05d.jpg" % count),
+                                       image)  # save frame as JPEG file
 
-                    result, exec_times_with_video_name_on_prediction = \
-                        classify_video_offline('tmp', input_file, class_names, model, opt)
+                            success, image = vidcap.read()
+                            count += 1
 
-                elif type_of_prediction == 'live':
-                    # Async
-                    # http://blog.blitzblit.com/2017/12/24/asynchronous-video-capture-in-python-with-opencv/
-                    # cap = VideoCaptureAsync(video_path)
-                    #
-                    # # Start a separate thread
-                    # cap.start()
-                    #
-                    # # Stop the separate thread for opencv
-                    # cap.stop()
+                        result, exec_times_with_video_name_on_prediction = \
+                            classify_video_offline('tmp', input_file, class_names, model, opt)
 
-                    cap = cv.VideoCapture(video_path)
+                    elif type_of_prediction == 'live':
+                        # Async
+                        # http://blog.blitzblit.com/2017/12/24/asynchronous-video-capture-in-python-with-opencv/
+                        # cap = VideoCaptureAsync(video_path)
+                        #
+                        # # Start a separate thread
+                        # cap.start()
+                        #
+                        # # Stop the separate thread for opencv
+                        # cap.stop()
 
-                    width = int(cap.get(3))
-                    height = int(cap.get(4))
-                    fps = round(cap.get(5))
+                        cap = cv.VideoCapture(video_path)
 
-                    logger.info(
-                        'Width = ' + str(width) + ' Height = ' + str(height) + ' fps = ' + str(fps))
+                        width = int(cap.get(3))
+                        height = int(cap.get(4))
+                        fps = round(cap.get(5))
 
-                    secondsToWaitBetweenFrames = int((1 / fps) * 1000)
+                        logger.info(
+                            'Width = ' + str(width) + ' Height = ' + str(height) + ' fps = ' + str(fps))
 
-                    frame_list = []
+                        secondsToWaitBetweenFrames = int((1 / fps) * 1000)
 
-                    success, frame = cap.read()
-                    count = 1
-                    text_with_prediction = ''
-
-                    font = cv.FONT_HERSHEY_COMPLEX
-
-                    while success:
-                        frame_list.append(frame)
-
-                        # TODO check se sample_duration può essere cambiata (il batch size riguarda il come caricare
-                        #  i frame, mentre la sample_duration è la lunghezza della clip)
-                        if count % opt.sample_duration == 0:
-                            frames_as_images = [Image.fromarray(np.array(frame), 'RGB') for frame in frame_list]
-
-                            result, exec_times_with_video_name_on_prediction = \
-                                classify_video_online(frames_as_images, count, class_names, model, opt)
-
-                            text_with_prediction = result[0]
-                            frame_list.clear()
-
-                        # Color in BGR!
-                        cv.putText(frame, text_with_prediction, (int(width * 0.40), int(height * 0.10)), font, 1,
-                                   (0, 0, 255), 3, cv.LINE_AA)
-
-                        # Disegna predizione da quel frame in poi, fino alla prossima prediction
-                        # cv.namedWindow('Frame', cv.WINDOW_NORMAL)
-                        # cv.resizeWindow('Frame', (width, height))
-                        cv.imshow('Frame', frame)
-
-                        cv.waitKey(secondsToWaitBetweenFrames)
+                        frame_list = []
 
                         success, frame = cap.read()
-                        count += 1
+                        count = 1
+                        text_with_prediction = ''
 
-                    cap.release()
-                    cv.destroyAllWindows()
+                        font = cv.FONT_HERSHEY_COMPLEX
 
-                    # TODO riempire
-                    result = []
-                    exec_times_with_video_name_on_prediction = []
+                        while success:
+                            frame_list.append(frame)
+
+                            # TODO check se sample_duration può essere cambiata (il batch size riguarda il come caricare
+                            #  i frame, mentre la sample_duration è la lunghezza della clip)
+                            if count % opt.sample_duration == 0:
+                                frames_as_images = [Image.fromarray(np.array(frame), 'RGB') for frame in frame_list]
+
+                                result, exec_times_with_video_name_on_prediction = \
+                                    classify_video_online(frames_as_images, count, class_names, model, opt)
+
+                                text_with_prediction = result[0]
+                                frame_list.clear()
+
+                            # Color in BGR!
+                            cv.putText(frame, text_with_prediction, (int(width * 0.40), int(height * 0.10)), font, 1,
+                                       (0, 0, 255), 3, cv.LINE_AA)
+
+                            # Disegna predizione da quel frame in poi, fino alla prossima prediction
+                            # cv.namedWindow('Frame', cv.WINDOW_NORMAL)
+                            # cv.resizeWindow('Frame', (width, height))
+                            cv.imshow('Frame', frame)
+
+                            cv.waitKey(secondsToWaitBetweenFrames)
+
+                            success, frame = cap.read()
+                            count += 1
+
+                        cap.release()
+                        cv.destroyAllWindows()
+
+                        # TODO riempire
+                        result = []
+                        exec_times_with_video_name_on_prediction = []
+                    else:
+                        raise ValueError(
+                            'Got input parameter for prediction type: ' +
+                            type_of_prediction +
+                            ' but expected one between [offline,live]')
                 else:
                     raise ValueError(
-                        'Got input parameter for prediction type: ' +
-                        type_of_prediction +
-                        ' but expected one between [offline,live]')
+                        'Got input parameter for prediction: ' +
+                        prediction_input_mode +
+                        ' but expected one between [opencv,legacy]')
+
+                outputs.append(result)
+                executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
+
+                subprocess.call('rm -f tmp/*', shell=True)
+
+                # TODO see if this helps with memory
+                torch.cuda.empty_cache()
+
+                # Does not work
+                # memory_still_in_use = ctypes.cast(id(torch.cuda.memory_allocated), ctypes.py_object).value
+                # logger.info('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
+                # logger.info_tensors_dump()
             else:
-                raise ValueError(
-                    'Got input parameter for prediction: ' +
-                    prediction_input_mode +
-                    ' but expected one between [opencv,legacy]')
-
-            outputs.append(result)
-            executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
-
-            subprocess.call('rm -f tmp/*', shell=True)
-
-            # TODO see if this helps with memory
-            torch.cuda.empty_cache()
-
-            # Does not work
-            # memory_still_in_use = ctypes.cast(id(torch.cuda.memory_allocated), ctypes.py_object).value
-            # logger.info('Memory GPU allocated: {}'.format(str(memory_still_in_use)))
-            # logger.info_tensors_dump()
-        else:
-            logger.info('{} does not exist'.format(input_file))
+                logger.info('{} does not exist'.format(input_file))
 
     if os.path.exists('tmp'):
         subprocess.call('rm -f tmp/*', shell=True)
