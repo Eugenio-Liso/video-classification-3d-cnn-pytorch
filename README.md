@@ -23,7 +23,7 @@ In the feature mode, this code outputs features of 512 dims (after global averag
 * Download the [pretrained model](https://drive.google.com/drive/folders/1zvl89AgFAApbH0At-gMuZSeQB_LpNP-M?usp=sharing).  
   * ResNeXt-101 achieved the best performance in our experiments. (See [paper](https://arxiv.org/abs/1711.09577) in details.)
 
-## Usage
+## Simple Usage
 ```bash
 # With custom classes. Resnet 101. Live predictions
 python main.py \
@@ -50,3 +50,47 @@ python main.py \
 To visualize the classification results directly on videos, use ```generate_result_video/generate_result_video.py```.
 
 Also, take a look at the various scripts in the `benchmark` folder on how to plot various prediction statistics.
+
+# Advanced usage
+
+## Testing with validation/test set with frames
+
+1. Extract the validation/test set in a folder with the following structure:
+
+    ```bash
+    val_or_test_set
+    ├── falling
+    │   ├── video_id1
+    │   │   ├── image_00001.jpg
+    │   │   ├── image_00002.jpg
+    │   │   ├── image_00003.jpg
+    │   │   ├── image_00004.jpg
+    │   │   ├── image_00005.jpg
+    │   │   ├── image_00006.jpg
+    │   │   ├── image_00007.jpg
+    │   ├── video_id2
+    │   │   ├── image_00001.jpg
+    │   │   ├── image_00002.jpg
+    │   │   ├── image_00003.jpg
+    ...
+    ├── running
+    └── walking
+    ```
+    
+    Each folder must contains a video id along with its frames.
+    You can also use the `extract_validation_set.py` script to filter an existing directory.
+
+2. Run the usual command with the `--frames` switch:
+
+    ```bash
+    python main.py \
+    --video_root val_or_test_set \
+    --model ... \
+    --mode score \
+    --model_name resnet \
+    --model_depth 101 \
+    --resnet_shortcut B \
+    --type_of_prediction offline \
+    --class_names_list classes_list/class_names_list_thesis \
+    --frames
+   ```
