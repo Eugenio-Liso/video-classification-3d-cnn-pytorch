@@ -87,8 +87,6 @@ if __name__ == "__main__":
     input_video_dir = opt.video_root
     input_video_files = [f for f in os.listdir(input_video_dir) if os.path.isfile(os.path.join(input_video_dir, f))]
 
-    logger.info('Input video files (empty if using --frames): {}'.format(input_video_files))
-
     prediction_input_mode = opt.prediction_input_mode
     type_of_prediction = opt.type_of_prediction
 
@@ -108,6 +106,8 @@ if __name__ == "__main__":
                 outputs.append(result)
                 executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
     else:
+        logger.info('Input video files: {}'.format(input_video_files))
+
         for input_file in input_video_files:
             video_path = os.path.join(input_video_dir, input_file)
             if os.path.exists(video_path):
