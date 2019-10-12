@@ -17,7 +17,7 @@ def get_metric(class_names, idx_metrics, row):
     return result, idx_metrics
 
 
-def build_plot(idx_chart, classes_metric, class_names, x_axis, title):
+def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_prediction_time=None, mean_accuracy=None):
     _ = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
@@ -30,12 +30,15 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title):
         barlist[1].set_color('g')
         barlist[2].set_color('r')
 
+    if mean_prediction_time is not None and mean_accuracy is not None:
+        plt.xlabel(f'\nMean prediction time: {mean_prediction_time} - Accuracy: {mean_accuracy}')
+
     plt.title(title)
 
 
 if __name__ == '__main__':
     opt = parse_opts_metrics_plot()
-
+    plt.rc('font', family='serif')
     _ = plt.figure('Testing Metrics')
 
     input_csv = opt.input_csv
@@ -52,7 +55,7 @@ if __name__ == '__main__':
         # Did not found any good way to take the last live of a CSV. I know it's inefficient
         for row in csv_reader:
             if len(row) != 0 and row[0] == 'Mean_metrics_for_videos':
-                mean_predicition_time = row[1]
+                mean_prediction_time = row[1]
                 mean_accuracy = row[2]
 
                 idx_metrics = 3
@@ -64,8 +67,11 @@ if __name__ == '__main__':
                 length_chart = len(class_names)
                 x_axis = np.arange(length_chart)
 
+                mean_prediction_time = '{:.4f}'.format(float(mean_prediction_time))
+                mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
+
                 build_plot(131, classes_precision, class_names, x_axis, "Classes Precision")
-                build_plot(132, classes_recall, class_names, x_axis, "Classes Recall")
+                build_plot(132, classes_recall, class_names, x_axis, "Classes Recall", mean_prediction_time, mean_accuracy)
                 build_plot(133, classes_fscore, class_names, x_axis, "Classes F-Score")
 
                 plt.subplots_adjust(wspace=0.5, hspace=1)
