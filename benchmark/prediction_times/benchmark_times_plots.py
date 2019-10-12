@@ -24,6 +24,7 @@ def build_benchmark_results(exec_times, max_videos_in_row):
         columns = 1
     else:
         columns = int(ceil(len(exec_times) / max_videos_in_row))
+    plt.rc('font', family='serif')
     _ = plt.figure('Inference Times')
 
     logger.info(
