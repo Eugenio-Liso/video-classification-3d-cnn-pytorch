@@ -22,7 +22,7 @@ def classify_video_offline(video_dir, video_name, class_names, model, opt):
         print(f"Warning. Skipping video: {video_dir} because it has n_frames: {n_frames} that are below the minimum "
               f"number of frames: {sample_duration}")
 
-        return {}, {}
+        return None, None
     else:
         batch_size, data_loader = create_dataset_offline(opt, video_dir)
 

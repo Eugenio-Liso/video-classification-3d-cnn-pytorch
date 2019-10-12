@@ -103,8 +103,9 @@ if __name__ == "__main__":
                 result, exec_times_with_video_name_on_prediction = \
                     classify_video_offline(video_dir, video_id, class_names, model, opt)
 
-                outputs.append(result)
-                executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
+                if result is not None and exec_times_with_video_name_on_prediction is not None:
+                    outputs.append(result)
+                    executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
     else:
         logger.info('Input video files: {}'.format(input_video_files))
 
@@ -221,8 +222,9 @@ if __name__ == "__main__":
                         prediction_input_mode +
                         ' but expected one between [opencv,legacy]')
 
-                outputs.append(result)
-                executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
+                if result is not None and exec_times_with_video_name_on_prediction is not None:
+                    outputs.append(result)
+                    executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
 
                 subprocess.call('rm -f tmp/*', shell=True)
 
