@@ -9,6 +9,7 @@ from logger_factory import getBasicLogger
 import csv
 from sklearn.metrics import precision_recall_fscore_support
 from metrics_aggregator import SimpleAverage
+import numpy as np
 
 logger = getBasicLogger(os.path.basename(__file__))
 
@@ -30,7 +31,7 @@ if __name__ == '__main__':
     ground_truth_labels = opt.labeled_videos
     classes_list = opt.classes_list
     output_csv = opt.output_csv
-    output_mean_times = opt.output_mean_times
+    output_times = opt.output_times
 
     logger.info("Input json of predictions: {}".format(output_json_predictions))
     logger.info("Input video labels: {}".format(ground_truth_labels))
@@ -41,8 +42,8 @@ if __name__ == '__main__':
     with open(ground_truth_labels, 'r') as f:
         labels = json.load(f)
 
-    with open(output_mean_times, 'r') as f:
-        output_mean_times_json = json.load(f)
+    with open(output_times, 'r') as f:
+        output_times_json = json.load(f)
 
     with open(classes_list, 'r') as f:
         class_names = []
@@ -52,9 +53,10 @@ if __name__ == '__main__':
     if os.path.exists(output_csv):
         os.remove(output_csv)
 
+    video_idx = 0
     with open(output_csv, 'w+') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        header = ["VIDEO_NAME", "MEAN_PREDICTION_TIME", "ACCURACY"]
+        header = ["VIDEO_NAME", "MEAN_PREDICTION_TIME", "STANDARD_DEV_PREDICTION_TIME", "ACCURACY"]
 
         create_column_metric_csv_header("PRECISION", class_names, header)
         create_column_metric_csv_header("RECALL", class_names, header)
@@ -63,16 +65,28 @@ if __name__ == '__main__':
         writer.writerow(header)
 
         assert len(json_predictions) == len(labels), \
-            "Labels size must be equal to output json size, i.e. one label per video prediction "
+            "Labels size must be equal to output json size, i.e. one label per video prediction. " \
+            f"Prediction has size: {len(json_predictions)}, but we have {len(labels)} target classes"
 
         average_accuracy = SimpleAverage()
-        average_mean_time = SimpleAverage()
+        exec_times = []
         predicted_labels = []
         target_labels = []
 
         for prediction_single_video in json_predictions:
             video_name = prediction_single_video['video']
             clips = prediction_single_video['clips']
+
+            exec_time_single_video = output_times_json[video_idx]
+            exec_time_values_single_video = []
+
+            for video, times in exec_time_single_video.items():
+                for sample_prediction in times:
+                    single_execution_time = sample_prediction[1]
+                    exec_time_values_single_video.append(single_execution_time)
+
+            mean_time_single_video = np.mean(exec_time_values_single_video)
+            std_time_single_video = np.std(exec_time_values_single_video)
 
             if video_name not in labels:
                 raise ValueError("Video {} not found in ground truth labels".format(video_name))
@@ -99,39 +113,41 @@ if __name__ == '__main__':
                                                 predicted_labels_for_single_video,
                                                 labels=class_names)
 
-            final_accuracy = (correct_predictions / total_predictions)
-            mean_time_for_video = output_mean_times_json[video_name]
+            accuracy_single_video = (correct_predictions / total_predictions)
 
-            logger.info("Mean Prediction Time for video: {} is {}".format(video_name, mean_time_for_video))
-            logger.info("Accuracy for video: {} is {}%".format(video_name, final_accuracy))
+            logger.info("Mean Prediction Time for video: {} is {}".format(video_name, mean_time_single_video))
+            logger.info("STD Prediction Time for video: {} is {}".format(video_name, std_time_single_video))
+            logger.info("Accuracy for video: {} is {}%".format(video_name, accuracy_single_video))
             logger.info("Precision for video: {} is {}".format(video_name, precision))
             logger.info("Recall for video: {} is {}".format(video_name, recall))
             logger.info("F-Score for video: {} is {}".format(video_name, fscore))
 
             average_accuracy.update(correct_predictions, total_predictions)
-            average_mean_time.update(mean_time_for_video)
+            exec_times.extend(exec_time_values_single_video)
             predicted_labels.extend(predicted_labels_for_single_video)
             target_labels.extend(ground_truth_list_repeated)
 
-            csv_row = [video_name, output_mean_times_json[video_name], final_accuracy]
+            csv_row = [video_name, mean_time_single_video, std_time_single_video, accuracy_single_video]
 
             create_column_metric_csv_content(precision, csv_row)
             create_column_metric_csv_content(recall, csv_row)
             create_column_metric_csv_content(fscore, csv_row)
 
             writer.writerow(csv_row)
+            video_idx += 1
 
         writer.writerow([])
 
         avg_accuracy = average_accuracy.average()
-        avg_mean_time = average_mean_time.average()
+        total_mean_time = np.mean(exec_times)
+        total_std_time = np.std(exec_times)
 
         precision, recall, fscore, _ = \
             precision_recall_fscore_support(target_labels,
                                             predicted_labels,
                                             labels=class_names)
 
-        final_row = ['Mean_metrics_for_videos', avg_mean_time, avg_accuracy]
+        final_row = ['Metrics_overall_dataset', total_mean_time, total_std_time, avg_accuracy]
 
         create_column_metric_csv_content(precision, final_row)
         create_column_metric_csv_content(recall, final_row)

@@ -17,7 +17,7 @@ def get_metric(class_names, idx_metrics, row):
     return result, idx_metrics
 
 
-def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_prediction_time=None, mean_accuracy=None):
+def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_prediction_time=None, mean_accuracy=None, std_prediction_time=None):
     _ = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
@@ -31,7 +31,7 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_predi
         barlist[2].set_color('r')
 
     if mean_prediction_time is not None and mean_accuracy is not None:
-        plt.xlabel(f'\nMean prediction time: {mean_prediction_time} - Accuracy: {mean_accuracy}')
+        plt.xlabel(f'\nMean prediction time: {mean_prediction_time} - STD prediction time: {std_prediction_time} - Accuracy: {mean_accuracy}')
 
     plt.title(title)
 
@@ -52,13 +52,14 @@ if __name__ == '__main__':
     with open(input_csv, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-        # Did not found any good way to take the last live of a CSV. I know it's inefficient
+        # Did not found any good way to take the last line of a CSV. I know it's inefficient
         for row in csv_reader:
-            if len(row) != 0 and row[0] == 'Mean_metrics_for_videos':
+            if len(row) != 0 and row[0] == 'Metrics_overall_dataset':
                 mean_prediction_time = row[1]
-                mean_accuracy = row[2]
+                std_prediction_time = row[2]
+                mean_accuracy = row[3]
 
-                idx_metrics = 3
+                idx_metrics = 4
 
                 classes_precision, idx_metrics = get_metric(class_names, idx_metrics, row)
                 classes_recall, idx_metrics = get_metric(class_names, idx_metrics, row)
@@ -68,10 +69,11 @@ if __name__ == '__main__':
                 x_axis = np.arange(length_chart)
 
                 mean_prediction_time = '{:.4f}'.format(float(mean_prediction_time))
+                std_prediction_time = '{:.4f}'.format(float(std_prediction_time))
                 mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
 
                 build_plot(131, classes_precision, class_names, x_axis, "Classes Precision")
-                build_plot(132, classes_recall, class_names, x_axis, "Classes Recall", mean_prediction_time, mean_accuracy)
+                build_plot(132, classes_recall, class_names, x_axis, "Classes Recall", mean_prediction_time, mean_accuracy, std_prediction_time)
                 build_plot(133, classes_fscore, class_names, x_axis, "Classes F-Score")
 
                 plt.subplots_adjust(wspace=0.5, hspace=1)

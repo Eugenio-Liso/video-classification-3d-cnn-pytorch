@@ -11,8 +11,8 @@ def parse_opts_benchmark():
                         help='A text file containing the possible outcomes. One class per row.')
     parser.add_argument('--output_csv', default='metrics.csv', type=str,
                         help='The output path of the csv with the calculated results')
-    parser.add_argument('--output_mean_times', default='', type=str, required=True,
-                        help='Output json from prediction phase with mean execution times')
+    parser.add_argument('--output_times', default='', type=str, required=True,
+                        help='Output json from prediction phase with execution times')
 
     args = parser.parse_args()
 
