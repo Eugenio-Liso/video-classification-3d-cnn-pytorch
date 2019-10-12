@@ -256,10 +256,10 @@ if __name__ == "__main__":
             mean_execution_times.update({video_name: statistics.mean(mean_exec_time)})
 
     with open(opt.output_times, 'w') as f:
-        json.dump(executions_times_with_video_names, f)
+        json.dump(executions_times_with_video_names, f, indent=4)
 
     with open(opt.output_mean_times, 'w') as f:
-        json.dump(mean_execution_times, f)
+        json.dump(mean_execution_times, f, indent=4)
 
     logger.info("Execution times: {}".format(executions_times_with_video_names))
     logger.info("Mean execution times: {}".format(mean_execution_times))
