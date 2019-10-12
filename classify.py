@@ -15,75 +15,84 @@ logger = lf.getBasicLogger(os.path.basename(__file__))
 def classify_video_offline(video_dir, video_name, class_names, model, opt):
     assert opt.mode in ['score', 'feature']
 
-    batch_size, data_loader = create_dataset_offline(opt, video_dir)
+    sample_duration = opt.sample_duration
+    n_frames = len(os.listdir(video_dir))
 
-    video_outputs = []
-    video_segments = []
-    executions_times = []
+    if n_frames < sample_duration:
+        print(f"Warning. Skipping video: {video_dir} because it has n_frames: {n_frames} that are below the minimum "
+              f"number of frames: {sample_duration}")
 
-    with torch.no_grad():
-        for i, (inputs, segments) in enumerate(data_loader):
-            start_time = time.time()
-
-            outputs = model(inputs)
-            end_time = time.time()
-
-            execution_time = end_time - start_time
-
-            print("--- Execution time for segment {}: {} seconds ---".format(segments, execution_time))
-            executions_times.append(execution_time)
-
-            video_outputs.append(outputs.cpu().data)
-            video_segments.append(segments)
-
-    video_outputs = torch.cat(video_outputs)
-    video_segments = torch.cat(video_segments)
-
-    # for execTimeIdx in range(len(executions_times)):
-    #     print('i: {}, execTime: {}'.format(execTimeIdx, executions_times[execTimeIdx]))
-    #
-    # for i in range(video_outputs.size(0)):
-    #     print("i: {}, segments: {}".format(i, video_segments[i].tolist()))
-
-    executions_times_with_video_name = {}
-    # TODO maybe this can be generalized when lengths differs
-    # Must be 1 to make sure that len(exec_times) == len(segments)
-    if batch_size == 1:
-
-        exec_times_with_segments = []
-
-        for i in range(video_outputs.size(0)):
-            segment = video_segments[i].tolist()
-            exec_time = executions_times[i]
-
-            exec_times_with_segments.append((segment, exec_time))
-
-        executions_times_with_video_name = {
-            video_name: exec_times_with_segments
-        }
-
-        print('Exec times final result with video name: {}'.format(executions_times_with_video_name))
+        return {}, {}
     else:
-        print('Resulting exec times cannot be calculated since length of segments and exec times may differ.')
+        batch_size, data_loader = create_dataset_offline(opt, video_dir)
 
-    results = {
-        'video': video_name,
-        'clips': []
-    }
+        video_outputs = []
+        video_segments = []
+        executions_times = []
 
-    _, max_indices = video_outputs.max(dim=1)
-    for i in range(video_outputs.size(0)):
-        clip_results = {
-            'segment': video_segments[i].tolist(),
+        with torch.no_grad():
+            for i, (inputs, segments) in enumerate(data_loader):
+                start_time = time.time()
+
+                outputs = model(inputs)
+                end_time = time.time()
+
+                execution_time = end_time - start_time
+
+                print("--- Execution time for segment {}: {} seconds ---".format(segments, execution_time))
+                executions_times.append(execution_time)
+
+                video_outputs.append(outputs.cpu().data)
+                video_segments.append(segments)
+
+        video_outputs = torch.cat(video_outputs)
+        video_segments = torch.cat(video_segments)
+
+        # for execTimeIdx in range(len(executions_times)):
+        #     print('i: {}, execTime: {}'.format(execTimeIdx, executions_times[execTimeIdx]))
+        #
+        # for i in range(video_outputs.size(0)):
+        #     print("i: {}, segments: {}".format(i, video_segments[i].tolist()))
+
+        executions_times_with_video_name = {}
+        # TODO maybe this can be generalized when lengths differs
+        # Must be 1 to make sure that len(exec_times) == len(segments)
+        if batch_size == 1:
+
+            exec_times_with_segments = []
+
+            for i in range(video_outputs.size(0)):
+                segment = video_segments[i].tolist()
+                exec_time = executions_times[i]
+
+                exec_times_with_segments.append((segment, exec_time))
+
+            executions_times_with_video_name = {
+                video_name: exec_times_with_segments
+            }
+
+            print('Exec times final result with video name: {}'.format(executions_times_with_video_name))
+        else:
+            print('Resulting exec times cannot be calculated since length of segments and exec times may differ.')
+
+        results = {
+            'video': video_name,
+            'clips': []
         }
 
-        if opt.mode == 'score':
-            clip_results['label'] = class_names[max_indices[i]]
-            clip_results['scores'] = video_outputs[i].tolist()
-        elif opt.mode == 'feature':
-            clip_results['features'] = video_outputs[i].tolist()
+        _, max_indices = video_outputs.max(dim=1)
+        for i in range(video_outputs.size(0)):
+            clip_results = {
+                'segment': video_segments[i].tolist(),
+            }
 
-        results['clips'].append(clip_results)
+            if opt.mode == 'score':
+                clip_results['label'] = class_names[max_indices[i]]
+                clip_results['scores'] = video_outputs[i].tolist()
+            elif opt.mode == 'feature':
+                clip_results['features'] = video_outputs[i].tolist()
+
+            results['clips'].append(clip_results)
 
     return results, executions_times_with_video_name
 

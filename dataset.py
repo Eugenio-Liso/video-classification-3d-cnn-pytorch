@@ -48,11 +48,6 @@ def get_default_video_loader():
     return functools.partial(video_loader, image_loader=image_loader)
 
 
-def load_annotation_data(data_file_path):
-    with open(data_file_path, 'r') as data_file:
-        return json.load(data_file)
-
-
 def get_class_labels(data):
     class_labels_map = {}
     index = 0
@@ -94,24 +89,20 @@ def make_dataset(video_path, sample_duration):
 
     max_index = (n_frames + 1)
     idx = 1
-    if n_frames < sample_duration:
-        print(f"Warning. Skipping video: {video_path} because it has n_frames: {n_frames} that are below the minimum "
-              f"number of frames: {sample_duration}")
-    else:
-        while idx < max_index:
-            lookahead = idx + sample_duration
-            sample_i = copy.deepcopy(sample)
+    while idx < max_index:
+        lookahead = idx + sample_duration
+        sample_i = copy.deepcopy(sample)
 
-            if lookahead > n_frames:
-                new_start_idx = idx - (lookahead - max_index)
-                sample_i['frame_indices'] = list(range(new_start_idx, new_start_idx + sample_duration))
-                sample_i['segment'] = torch.IntTensor([new_start_idx, new_start_idx + sample_duration - 1])
-            else:
-                sample_i['frame_indices'] = list(range(idx, idx + sample_duration))
-                sample_i['segment'] = torch.IntTensor([idx, idx + sample_duration - 1])
+        if lookahead > n_frames:
+            new_start_idx = idx - (lookahead - max_index)
+            sample_i['frame_indices'] = list(range(new_start_idx, new_start_idx + sample_duration))
+            sample_i['segment'] = torch.IntTensor([new_start_idx, new_start_idx + sample_duration - 1])
+        else:
+            sample_i['frame_indices'] = list(range(idx, idx + sample_duration))
+            sample_i['segment'] = torch.IntTensor([idx, idx + sample_duration - 1])
 
-            dataset.append(sample_i)
-            idx = lookahead
+        dataset.append(sample_i)
+        idx = lookahead
 
     return dataset
 
