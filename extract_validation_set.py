@@ -18,9 +18,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--frames_dir', required=True, type=Path,
-                        help='Root directory containing all frames. It should have '
-                             'only a level of subdirs, with the target class '
-                             'labels')
+                        help='Root directory containing all frames.')
     parser.add_argument('--validation_set_file', required=True, type=Path,
                         help='File that contains videos, one per line')
     parser.add_argument('--destination_val_set', required=True, type=Path, help='Destination of the validation set')
