@@ -57,11 +57,12 @@ def extract_data(exec_time_single_video, single_plot):
 
         # Calculate the simple average of the data
         y_mean = [np.mean(samples_points_y)] * len(batches_count_x)
+        y_std = '{:.6f}'.format(np.std(samples_points_y))
 
         plt.plot(batches_count_x, samples_points_y, label='Data', marker='o')
         plt.plot(batches_count_x, y_mean, label='Mean', linestyle='--')
         plt.ylabel('Prediction time (sec)')
-        plt.xlabel('Number of frame batches')
+        plt.xlabel(f'Number of frame batches\nStandard deviation: {y_std}')
 
         # Make a legend
         plt.legend(loc='upper right')
