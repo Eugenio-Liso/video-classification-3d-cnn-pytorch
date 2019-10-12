@@ -92,24 +92,26 @@ def make_dataset(video_path, sample_duration):
         'n_frames': n_frames,
     }
 
-    step = sample_duration
-
     max_index = (n_frames + 1)
     idx = 1
-    while idx < max_index:
-        lookahead = idx + step
-        sample_i = copy.deepcopy(sample)
+    if n_frames < sample_duration:
+        print(f"Warning. Skipping video: {video_path} because it has n_frames: {n_frames} that are below the minimum "
+              f"number of frames: {sample_duration}")
+    else:
+        while idx < max_index:
+            lookahead = idx + sample_duration
+            sample_i = copy.deepcopy(sample)
 
-        if lookahead > n_frames:
-            new_start_idx = idx - (lookahead - max_index)
-            sample_i['frame_indices'] = list(range(new_start_idx, new_start_idx + sample_duration))
-            sample_i['segment'] = torch.IntTensor([new_start_idx, new_start_idx + sample_duration - 1])
-        else:
-            sample_i['frame_indices'] = list(range(idx, idx + sample_duration))
-            sample_i['segment'] = torch.IntTensor([idx, idx + sample_duration - 1])
+            if lookahead > n_frames:
+                new_start_idx = idx - (lookahead - max_index)
+                sample_i['frame_indices'] = list(range(new_start_idx, new_start_idx + sample_duration))
+                sample_i['segment'] = torch.IntTensor([new_start_idx, new_start_idx + sample_duration - 1])
+            else:
+                sample_i['frame_indices'] = list(range(idx, idx + sample_duration))
+                sample_i['segment'] = torch.IntTensor([idx, idx + sample_duration - 1])
 
-        dataset.append(sample_i)
-        idx = lookahead
+            dataset.append(sample_i)
+            idx = lookahead
 
     return dataset
 
@@ -139,6 +141,8 @@ class Video(data.Dataset):
         clip = self.loader(path, frame_indices)
         if self.spatial_transform is not None:
             clip = [self.spatial_transform(img) for img in clip]
+        if not clip:
+            print(clip)
         clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
 
         target = self.data[index]['segment']
