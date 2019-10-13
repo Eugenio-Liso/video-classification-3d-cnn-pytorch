@@ -37,6 +37,7 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_predi
 
     barlist = plt.bar(x_axis, classes_metric)
     insert_values_on_bars(ax, barlist)
+    ax.xaxis.grid()  # horizontal grid only
 
     plt.xticks(x_axis, class_names)
     plt.ylim(top=1)
