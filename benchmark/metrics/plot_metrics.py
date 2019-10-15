@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from opts_metrics_plot import parse_opts_metrics_plot
-
+import matplotlib.cm as cm
+from matplotlib.colors import Normalize
 sns.set()
 
 
@@ -31,12 +32,15 @@ def insert_values_on_bars(ax, bars):
                     ha='center', va='bottom')
 
 
-def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_prediction_time=None,
+def build_plot(idx_chart, classes_metric, class_names, x_axis, title, cmap, mean_prediction_time=None,
                mean_accuracy_keys=None, mean_accuracy_value=None, std_prediction_time=None):
     ax = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    barlist = plt.bar(x_axis, classes_metric)
+    cm_map = cm.get_cmap(cmap)
+    norm = Normalize(vmin=0, vmax=len(classes_metric))
+
+    barlist = plt.bar(x_axis, classes_metric, color=cm_map(norm(x_axis)))
     insert_values_on_bars(ax, barlist)
     ax.xaxis.grid()  # horizontal grid only
 
@@ -44,10 +48,10 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_predi
     plt.ylim(top=1)
 
     # Think of a general way to actually change colors dynamically
-    if len(classes_metric) == 3:
-        barlist[0].set_color('b')
-        barlist[1].set_color('g')
-        barlist[2].set_color('r')
+    # if len(classes_metric) == 3:
+    #     barlist[0].set_color('b')
+    #     barlist[1].set_color('g')
+    #     barlist[2].set_color('r')
 
     if mean_prediction_time is not None and std_prediction_time is not None and mean_accuracy_value is not None:
         plt.xlabel(
@@ -70,6 +74,7 @@ if __name__ == '__main__':
     classes_list = opt.classes_list
     merge = opt.merge
     filter_on_class = opt.filter_on_class
+    cmap = opt.colormap
 
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
@@ -107,11 +112,11 @@ if __name__ == '__main__':
                     std_prediction_time = '{:.4f}'.format(float(std_prediction_time))
                     mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
 
-                    build_plot(131, class_precision, class_names, x_axis, "Classes Precision")
-                    build_plot(132, class_recall, class_names, x_axis, "Classes Recall",
+                    build_plot(131, class_precision, class_names, x_axis, "Classes Precision", cmap)
+                    build_plot(132, class_recall, class_names, x_axis, "Classes Recall", cmap,
                                mean_prediction_time=mean_prediction_time,
-                               mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
-                    build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score")
+                               mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time, )
+                    build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score", cmap)
 
                     plt.subplots_adjust(wspace=0.5, hspace=1)
                     plt.show()
@@ -164,10 +169,10 @@ if __name__ == '__main__':
                         classes_fscores.extend(class_fscore)
 
         x_labels = mean_accuracies.keys()
-        build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision")
-        build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall",
+        build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap)
+        build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap,
                    mean_accuracy_keys=mean_accuracies)
-        build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score")
+        build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap)
 
         plt.subplots_adjust(wspace=0.5, hspace=1)
         plt.show()
