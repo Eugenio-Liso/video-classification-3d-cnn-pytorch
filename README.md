@@ -58,7 +58,7 @@ python main.py \
 
 ## Testing with validation/test set with frames
 
-1. Extract the validation/test set in a folder with the following structure:
+1. Make sure to extract the validation/test set in a folder with the following structure:
 
     ```bash
     val_or_test_set
@@ -81,8 +81,7 @@ python main.py \
     ```
     
     Each folder must contains a video id along with its frames.
-    You can also use the `extract_validation_set.py` script to filter an existing directory.
-
+    
 2. Run the usual command with the `--frames` switch:
 
     ```bash
@@ -90,7 +89,7 @@ python main.py \
     --video_root val_or_test_set \
     --model ... \
     --mode score \
-    --model_name resnet \
+    --model_name resnext \
     --model_depth 101 \
     --resnet_shortcut B \
     --type_of_prediction offline \
