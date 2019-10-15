@@ -1,4 +1,5 @@
 import csv
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,8 +31,8 @@ def insert_values_on_bars(ax, bars):
                     ha='center', va='bottom')
 
 
-def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_prediction_time=None, mean_accuracy=None,
-               std_prediction_time=None):
+def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_prediction_time=None,
+               mean_accuracy_keys=None, mean_accuracy_value=None, std_prediction_time=None):
     ax = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
@@ -48,9 +49,14 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, mean_predi
         barlist[1].set_color('g')
         barlist[2].set_color('r')
 
-    if mean_prediction_time is not None and mean_accuracy is not None:
+    if mean_prediction_time is not None and std_prediction_time is not None and mean_accuracy_value is not None:
         plt.xlabel(
-            f'\nMean prediction time: {mean_prediction_time} - STD prediction time: {std_prediction_time} - Accuracy: {mean_accuracy}')
+            f'\nMean prediction time: {mean_prediction_time} - STD prediction time: {std_prediction_time} - Accuracy: {mean_accuracy_value}')
+    elif mean_accuracy_keys is not None:
+        printed_str = ''
+        for keyName, acc in mean_accuracy_keys.items():
+            printed_str += f'Accuracy on {keyName}: {"{:.4f}".format(float(acc))}\n'
+        plt.xlabel(printed_str)
 
     plt.title(title)
 
@@ -62,41 +68,106 @@ if __name__ == '__main__':
 
     input_csv = opt.input_csv
     classes_list = opt.classes_list
+    merge = opt.merge
+    filter_on_class = opt.filter_on_class
 
-    with open(classes_list, 'r') as f:
-        class_names = []
-        for row in f:
-            class_names.append(row[:-1])
+    if not merge and len(input_csv) != 1:
+        raise Exception("When not merging different csv metrics, you should specify only one csv in input")
+    elif merge and (len(input_csv) < 2 or not filter_on_class):
+        raise Exception("When merging csv files, you should specify at least two input csv and a class filter")
 
-    with open(input_csv, 'r') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    if not merge:
+        with open(classes_list, 'r') as f:
+            class_names = []
+            for row in f:
+                class_names.append(row[:-1])
+        length_chart = len(class_names)
+        x_axis = np.arange(length_chart)
+    else:
+        x_axis = np.arange(len(input_csv))
 
-        # Did not found any good way to take the last line of a CSV. I know it's inefficient
-        for row in csv_reader:
-            if len(row) != 0 and row[0] == 'Metrics_overall_dataset':
-                mean_prediction_time = row[1]
-                std_prediction_time = row[2]
-                mean_accuracy = row[3]
+    if not merge:
+        with open(input_csv[0], 'r') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
-                idx_metrics = 4
+            # Did not found any good way to take the last line of a CSV. I know it's inefficient
+            for row in csv_reader:
+                if len(row) != 0 and row[0] == 'Metrics_overall_dataset':
+                    mean_prediction_time = row[1]
+                    std_prediction_time = row[2]
+                    mean_accuracy = row[3]
 
-                classes_precision, idx_metrics = get_metric(class_names, idx_metrics, row)
-                classes_recall, idx_metrics = get_metric(class_names, idx_metrics, row)
-                classes_fscore, _ = get_metric(class_names, idx_metrics, row)
+                    idx_metrics = 4
 
-                length_chart = len(class_names)
-                x_axis = np.arange(length_chart)
+                    class_precision, idx_metrics = get_metric(class_names, idx_metrics, row)
+                    class_recall, idx_metrics = get_metric(class_names, idx_metrics, row)
+                    class_fscore, _ = get_metric(class_names, idx_metrics, row)
 
-                mean_prediction_time = '{:.4f}'.format(float(mean_prediction_time))
-                std_prediction_time = '{:.4f}'.format(float(std_prediction_time))
-                mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
+                    mean_prediction_time = '{:.4f}'.format(float(mean_prediction_time))
+                    std_prediction_time = '{:.4f}'.format(float(std_prediction_time))
+                    mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
 
-                build_plot(131, classes_precision, class_names, x_axis, "Classes Precision")
-                build_plot(132, classes_recall, class_names, x_axis, "Classes Recall", mean_prediction_time,
-                           mean_accuracy, std_prediction_time)
-                build_plot(133, classes_fscore, class_names, x_axis, "Classes F-Score")
+                    build_plot(131, class_precision, class_names, x_axis, "Classes Precision")
+                    build_plot(132, class_recall, class_names, x_axis, "Classes Recall",
+                               mean_prediction_time=mean_prediction_time,
+                               mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
+                    build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score")
 
-                plt.subplots_adjust(wspace=0.5, hspace=1)
-                plt.show()
-            else:
-                continue
+                    plt.subplots_adjust(wspace=0.5, hspace=1)
+                    plt.show()
+                else:
+                    continue
+    else:
+        first_header = True
+        class_indexes_for_metrics = []
+
+        # Also prediction time?
+        mean_accuracies = {}
+        classes_precisions = []
+        classes_recalls = []
+        classes_fscores = []
+        dummy_class_names = [filter_on_class]
+
+        for metric_csv in input_csv:
+            with open(metric_csv, 'r') as csv_file:
+                csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                accuracy_key = os.path.basename(os.path.normpath(metric_csv))
+
+                for row in csv_reader:
+                    if first_header:
+                        first_header = False
+                        class_found = False
+                        tmp_idx = 0
+                        while tmp_idx < len(row):
+                            row_value = row[tmp_idx]
+                            if "_" in row_value and row_value.split('_')[1] == filter_on_class:
+                                class_found = True
+                                class_indexes_for_metrics.append(tmp_idx)
+                            tmp_idx += 1
+                        if not class_found:
+                            raise Exception(f"The class specified: {filter_on_class} cannot be found in csv metrics")
+                        assert len(class_indexes_for_metrics) == 3, "The class metrics should be three"
+
+                    if len(row) != 0 and row[0] == 'Metrics_overall_dataset':
+                        mean_accuracy = row[3]
+
+                        if '.csv' in accuracy_key:
+                            accuracy_key = accuracy_key.split('.')[0]
+                        mean_accuracies[accuracy_key] = mean_accuracy
+
+                        class_precision, _ = get_metric(dummy_class_names, class_indexes_for_metrics[0], row)
+                        class_recall, _ = get_metric(dummy_class_names, class_indexes_for_metrics[1], row)
+                        class_fscore, _ = get_metric(dummy_class_names, class_indexes_for_metrics[2], row)
+
+                        classes_precisions.extend(class_precision)
+                        classes_recalls.extend(class_recall)
+                        classes_fscores.extend(class_fscore)
+
+        x_labels = mean_accuracies.keys()
+        build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision")
+        build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall",
+                   mean_accuracy_keys=mean_accuracies)
+        build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score")
+
+        plt.subplots_adjust(wspace=0.5, hspace=1)
+        plt.show()
