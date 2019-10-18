@@ -102,3 +102,8 @@ python main.py \
 To visualize the classification results directly on videos, use ```generate_result_video/generate_result_video.py```.
 
 Also, take a look at the various scripts in the `benchmark` folder on how to plot various prediction statistics.
+
+## Automatic Test set labeling
+
+In order to plot the prediction results, you have to create a file with the target labels for every video. Since 
+this process could be time consuming if you have tons of them, use the script `automatic_test_set_labeling.py`
