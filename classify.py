@@ -37,8 +37,6 @@ def classify_video_offline(class_names, model, opt):
 
     data_loader = create_dataset_offline(opt)
 
-    model.eval()
-
     accuracies = AverageMeter()
 
     class_size = len(class_names)
