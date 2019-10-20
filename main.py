@@ -74,8 +74,8 @@ if __name__ == "__main__":
     # assert opt.arch == model_data['arch']
     model.load_state_dict(model_data['state_dict'])
     model.eval()
-    if opt.verbose:
-        logger.info(model)
+
+    print(f"Input model: {model}")
 
     if os.path.exists('tmp'):
         subprocess.call('rm -f tmp/*', shell=True)
