@@ -59,7 +59,7 @@ if __name__ == '__main__':
                     print(f'WARNING: Skipping video at url {video_url} because it is unavailable.')
                     continue
                 except KeyError:
-                    print("The video is not available in your country or a random error occurred")
+                    print(f"The video at url {video_url} is not available in your country or a random error occurred")
                     
                 yt.streams.filter(subtype=video_extension).first().download(output_path=tmp_dir, filename=video_id)
 
