@@ -56,7 +56,7 @@ def classify_video_offline(class_names, model, opt):
             outputs = model(inputs)
             end_time = time.time()
 
-            execution_time = (end_time - start_time) / len(inputs)
+            execution_time = (end_time - start_time)
             # print(len(inputs))
             # print(len(targets))
             print(f'Execution time: {execution_time}')
