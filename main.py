@@ -135,7 +135,7 @@ if __name__ == "__main__":
                             count += 1
 
                         result, exec_times_with_video_name_on_prediction = \
-                            classify_video_offline('tmp', input_file, class_names, model, opt)
+                            classify_video_offline(class_names, model, opt)
 
                     elif type_of_prediction == 'live':
                         # Async
