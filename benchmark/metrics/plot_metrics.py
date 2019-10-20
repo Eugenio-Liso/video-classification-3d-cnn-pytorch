@@ -136,9 +136,6 @@ if __name__ == '__main__':
                 else:
                     continue
     else:
-        first_header = True
-        class_indexes_for_metrics = []
-
         # Also prediction time?
         mean_accuracies = {}
         classes_precisions = []
@@ -147,6 +144,9 @@ if __name__ == '__main__':
         dummy_class_names = [filter_on_class]
 
         for metric_csv in input_csv:
+            class_indexes_for_metrics = []
+            first_header = True
+
             with open(metric_csv, 'r') as csv_file:
                 csv_reader = csv.reader(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 accuracy_key = os.path.basename(os.path.normpath(metric_csv))
