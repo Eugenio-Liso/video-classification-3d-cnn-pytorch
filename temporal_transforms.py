@@ -1,5 +1,6 @@
 import random
 import math
+import copy
 
 
 class Compose(object):
@@ -94,7 +95,6 @@ class TemporalRandomCrop(object):
         self.loop = LoopPadding(size)
 
     def __call__(self, frame_indices):
-
         rand_end = max(0, len(frame_indices) - self.size - 1)
         begin_index = random.randint(0, rand_end)
         end_index = min(begin_index + self.size, len(frame_indices))
@@ -103,6 +103,30 @@ class TemporalRandomCrop(object):
 
         if len(out) < self.size:
             out = self.loop(out)
+
+        return out
+
+
+class TemporalNonOverlappingWindow(object):
+
+    def __init__(self, sample_duration):
+        self.sample_duration = sample_duration
+
+    def __call__(self, frame_indices):
+        n_frames = len(frame_indices) + 1
+        # max_index = (n_frames + 1)
+        idx = 1
+        out = []
+        while idx < n_frames:
+            lookahead = idx + self.sample_duration
+
+            if lookahead > n_frames:
+                new_start_idx = idx - (lookahead - n_frames)
+                out.append(list(range(new_start_idx, new_start_idx + self.sample_duration)))
+            else:
+                out.append(list(range(idx, idx + self.sample_duration)))
+
+            idx = lookahead
 
         return out
 
@@ -116,8 +140,10 @@ class TemporalEvenCrop(object):
 
     def __call__(self, frame_indices):
         n_frames = len(frame_indices)
-        stride = max(
-            1, math.ceil((n_frames - 1 - self.size) / (self.n_samples - 1)))
+        if self.n_samples == 1:
+            stride = 1
+        else:
+            stride = max(1, math.ceil((n_frames - 1 - self.size) / (self.n_samples - 1)))
 
         out = []
         for begin_index in frame_indices[::stride]:

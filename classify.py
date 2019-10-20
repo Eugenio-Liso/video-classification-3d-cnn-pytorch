@@ -12,7 +12,7 @@ from torch.autograd import Variable
 from dataset import get_validation_data
 from logging_utils import logger_factory as lf
 from spatial_transforms import (Resize, ScaleValue, Compose, Normalize, Scale, CenterCrop, ToTensor)
-from temporal_transforms import (TemporalSubsampling, Compose as TemporalCompose, TemporalEvenCrop)
+from temporal_transforms import (TemporalSubsampling, TemporalNonOverlappingWindow, Compose as TemporalCompose, TemporalEvenCrop)
 from utils import AverageMeter, calculate_accuracy, ground_truth_and_predictions
 from utils import worker_init_fn, get_mean_std
 
@@ -51,22 +51,24 @@ def classify_video_offline(class_names, model, opt):
     print('Starting prediction phase')
 
     with torch.no_grad():
-        for i, (inputs, targets) in enumerate(data_loader):
+        for _, (inputs, targets) in enumerate(data_loader):
             targets = targets.to(device, non_blocking=True)
 
             start_time = time.time()
             outputs = model(inputs)
             end_time = time.time()
 
-            execution_time = end_time - start_time
+            execution_time = (end_time - start_time) / len(inputs)
+            # print(len(inputs))
+            # print(len(targets))
             print(f'Execution time: {execution_time}')
 
             executions_times.append(execution_time)
             acc = calculate_accuracy(outputs, targets)
 
             ground_truth, predictions = ground_truth_and_predictions(outputs, targets)
-            print(ground_truth)
-            print(predictions)
+            # print(ground_truth)
+            # print(predictions)
             ground_truth_labels.extend(ground_truth)
             predicted_labels.extend(predictions)
 
@@ -137,7 +139,7 @@ def create_dataset_offline(opt):
     if opt.sample_t_stride > 1:
         temporal_transform.append(TemporalSubsampling(opt.sample_t_stride))
     temporal_transform.append(
-        TemporalEvenCrop(opt.sample_duration, opt.n_val_samples))
+        TemporalNonOverlappingWindow(opt.sample_duration))
     temporal_transform = TemporalCompose(temporal_transform)
 
     validation_data, collate_fn = get_validation_data(
