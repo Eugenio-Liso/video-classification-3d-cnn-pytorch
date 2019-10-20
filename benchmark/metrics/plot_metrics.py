@@ -80,6 +80,7 @@ if __name__ == '__main__':
     filter_on_class = opt.filter_on_class
     cmap = opt.colormap
     output_plot = opt.output_plot
+    rename_target_class = opt.rename_target_class
 
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
@@ -90,7 +91,11 @@ if __name__ == '__main__':
         with open(classes_list, 'r') as f:
             class_names = []
             for row in f:
-                class_names.append(row[:-1])
+                target_class = row[:-1]
+                if target_class in rename_target_class:
+                    class_names.append(rename_target_class[target_class])
+                else:
+                    class_names.append(target_class)
         length_chart = len(class_names)
         x_axis = np.arange(length_chart)
     else:

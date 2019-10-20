@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+import json
 
 def parse_opts_metrics_plot():
     parser = argparse.ArgumentParser()
@@ -15,6 +16,7 @@ def parse_opts_metrics_plot():
                         help='Colormap to use when drawing the chart')
     parser.add_argument('--output_plot', type=Path,
                         help='Output path of the plot containing the calculated metrics')
+    parser.add_argument("--rename_target_class", type=json.loads, help="Optional classes to rename", default={})
 
     args = parser.parse_args()
 
