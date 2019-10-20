@@ -7,6 +7,8 @@ from .loader import VideoLoader
 
 from pathlib import Path
 from os.path import join
+
+
 def get_class_labels(data):
     class_labels_map = {}
     index = 0
@@ -83,10 +85,12 @@ class VideoDataset(data.Dataset):
 
             video_path = video_path_formatter(root_path, label, video_ids[i])
             if not video_path.exists():
+                print(f"Warning: discarding {video_path} since it does not exists. Check the annotation file")
                 continue
 
             segment = annotations[i]['segment']
             if segment[1] == 1:
+                print(f"Warning: skipping {video_path} since it has only one frame")
                 continue
 
             frame_indices = list(range(segment[0], segment[1]))
