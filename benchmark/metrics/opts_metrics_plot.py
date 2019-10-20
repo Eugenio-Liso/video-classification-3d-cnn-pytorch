@@ -13,7 +13,7 @@ def parse_opts_metrics_plot():
                              'Only a subset of the metrics will be displayed')
     parser.add_argument('--colormap', default='gist_rainbow', type=str,
                         help='Colormap to use when drawing the chart')
-    parser.add_argument('--output_plot', default='plot_metrics.png', type=Path, required=True,
+    parser.add_argument('--output_plot', type=Path,
                         help='Output path of the plot containing the calculated metrics')
 
     args = parser.parse_args()

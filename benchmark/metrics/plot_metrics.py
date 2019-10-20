@@ -124,7 +124,10 @@ if __name__ == '__main__':
                     build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score", cmap)
 
                     plt.subplots_adjust(wspace=0.5, hspace=1)
-                    plt.savefig(output_plot, bbox_inches='tight')
+                    if output_plot is None:
+                        plt.show()
+                    else:
+                        plt.savefig(output_plot, bbox_inches='tight')
                 else:
                     continue
     else:
@@ -180,4 +183,7 @@ if __name__ == '__main__':
         build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap)
 
         plt.subplots_adjust(wspace=0.5, hspace=1)
-        plt.savefig(output_plot, bbox_inches='tight')
+        if output_plot is None:
+            plt.show()
+        else:
+            plt.savefig(output_plot, bbox_inches='tight')
