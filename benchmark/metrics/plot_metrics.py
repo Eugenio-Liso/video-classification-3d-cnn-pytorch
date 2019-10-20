@@ -60,7 +60,7 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, cmap, mean
 
     if mean_prediction_time is not None and std_prediction_time is not None and mean_accuracy_value is not None:
         plt.xlabel(
-            f'\nMean prediction time: {mean_prediction_time} - STD prediction time: {std_prediction_time} - Accuracy: {mean_accuracy_value}')
+            f'\nMean prediction time: {mean_prediction_time} secs - STD prediction time: {std_prediction_time} secs - Accuracy: {mean_accuracy_value}')
     elif mean_accuracy_keys is not None:
         printed_str = ''
         for keyName, acc in mean_accuracy_keys.items():
