@@ -9,9 +9,14 @@ import matplotlib.cm as cm
 from matplotlib.colors import Normalize
 sns.set()
 
-
 # from matplotlib.ticker import FormatStrFormatter
 
+def cm2inch(*tupl):
+    inch = 2.54
+    if isinstance(tupl[0], tuple):
+        return tuple(i/inch for i in tupl[0])
+    else:
+        return tuple(i/inch for i in tupl)
 
 def get_metric(class_names, idx_metrics, row):
     result = []
@@ -68,13 +73,13 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, cmap, mean
 if __name__ == '__main__':
     opt = parse_opts_metrics_plot()
     plt.rc('font', family='serif')
-    _ = plt.figure('Testing Metrics')
-
+    _ = plt.figure('Testing Metrics', figsize=cm2inch(35, 35), dpi=80)
     input_csv = opt.input_csv
     classes_list = opt.classes_list
     merge = opt.merge
     filter_on_class = opt.filter_on_class
     cmap = opt.colormap
+    output_plot = opt.output_plot
 
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
@@ -119,7 +124,7 @@ if __name__ == '__main__':
                     build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score", cmap)
 
                     plt.subplots_adjust(wspace=0.5, hspace=1)
-                    plt.show()
+                    plt.savefig(output_plot, bbox_inches='tight')
                 else:
                     continue
     else:
@@ -175,4 +180,4 @@ if __name__ == '__main__':
         build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap)
 
         plt.subplots_adjust(wspace=0.5, hspace=1)
-        plt.show()
+        plt.savefig(output_plot, bbox_inches='tight')
