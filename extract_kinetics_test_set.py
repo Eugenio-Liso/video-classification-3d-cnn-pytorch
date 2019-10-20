@@ -58,6 +58,8 @@ if __name__ == '__main__':
                 except VideoUnavailable:
                     print(f'WARNING: Skipping video at url {video_url} because it is unavailable.')
                     continue
+                except KeyError:
+                    print("The video is not available in your country or a random error occurred")
                     
                 yt.streams.filter(subtype=video_extension).first().download(output_path=tmp_dir, filename=video_id)
 
@@ -76,8 +78,7 @@ if __name__ == '__main__':
                     os.makedirs(output_frames_subdir, mode=0o755)
 
                 input_video_path = os.path.join(tmp_dir, f"{video_id}.{video_extension}")
-                ffmpeg_command = 'ffmpeg -ss %(start_timestamp)s -i %(videopath)s -to %(clip_length)s \
-                    -copyts -loglevel error %(outpath)s' % {
+                ffmpeg_command = 'ffmpeg -ss %(start_timestamp)s -i "%(videopath)s" -to %(clip_length)s -copyts -loglevel error "%(outpath)s"' % {
                     'start_timestamp': start_seconds,
                     'clip_length': end_seconds,
                     'videopath': input_video_path,
