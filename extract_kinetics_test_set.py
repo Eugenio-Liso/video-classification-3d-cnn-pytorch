@@ -50,19 +50,6 @@ if __name__ == '__main__':
 
             if not filter_on_classes or (target_class in filter_on_classes):
 
-                print(f"Downloading and extracting frames for video {video_id}")
-
-                # Download video
-                try:
-                    yt = YouTube(video_url)
-                except VideoUnavailable:
-                    print(f'WARNING: Skipping video at url {video_url} because it is unavailable.')
-                    continue
-                except KeyError:
-                    print(f"The video at url {video_url} is not available in your country or a random error occurred")
-                    
-                yt.streams.filter(subtype=video_extension).first().download(output_path=tmp_dir, filename=video_id)
-
                 start_seconds = hou_min_sec(float(segment[0]) * 1000)
                 end_seconds = hou_min_sec(float(segment[1]) * 1000)
 
@@ -76,6 +63,20 @@ if __name__ == '__main__':
                     continue
                 else:
                     os.makedirs(output_frames_subdir, mode=0o755)
+
+                print(f"Downloading and extracting frames for video {video_id}")
+
+                # Download video
+                try:
+                    yt = YouTube(video_url)
+                except VideoUnavailable:
+                    print(f'WARNING: Skipping video at url {video_url} because it is unavailable.')
+                    continue
+                except Exception:
+                    print(f"The video at url {video_url} is not available in your country or a random error occurred")
+                    continue
+
+                yt.streams.filter(subtype=video_extension).first().download(output_path=tmp_dir, filename=video_id)
 
                 input_video_path = os.path.join(tmp_dir, f"{video_id}.{video_extension}")
                 ffmpeg_command = 'ffmpeg -ss %(start_timestamp)s -i "%(videopath)s" -to %(clip_length)s -copyts -loglevel error "%(outpath)s"' % {
