@@ -1,119 +1,157 @@
-import torch
+import csv
+import os
 import time
+# Removes useless warning when precision, recall or fscore are zero
+import warnings
+
+import numpy as np
+import torch
+from sklearn.metrics import precision_recall_fscore_support
 from torch.autograd import Variable
 
-from dataset import Video
-from spatial_transforms import (Compose, Normalize, Scale, CenterCrop, ToTensor)
-from temporal_transforms import LoopPadding
+from dataset import get_validation_data
 from logging_utils import logger_factory as lf
+from spatial_transforms import (Resize, ScaleValue, Compose, Normalize, Scale, CenterCrop, ToTensor)
+from temporal_transforms import (TemporalSubsampling, Compose as TemporalCompose, TemporalEvenCrop)
+from utils import AverageMeter, calculate_accuracy, ground_truth_and_predictions
+from utils import worker_init_fn, get_mean_std
 
-import os
+warnings.filterwarnings('ignore', message='(.*)Precision and F-score are ill-defined(.*)')
+warnings.filterwarnings('ignore', message='(.*)Recall and F-score are ill-defined(.*)')
 
 logger = lf.getBasicLogger(os.path.basename(__file__))
 
 
-def classify_video_offline(video_dir, video_name, class_names, model, opt):
-    assert opt.mode in ['score', 'feature']
+def create_column_metric_csv_content(contents, csv_row):
+    for result in contents:
+        csv_row.append(result)
 
-    sample_duration = opt.sample_duration
-    n_frames = len(os.listdir(video_dir))
 
-    if n_frames < sample_duration:
-        print(f"Warning. Skipping video: {video_dir} because it has n_frames: {n_frames} that are below the minimum "
-              f"number of frames: {sample_duration}")
+def create_column_metric_csv_header(column_prefix, class_names, header):
+    for target_class in class_names:
+        header.append(f"{column_prefix}_{target_class}")
 
-        return None, None
-    else:
-        batch_size, data_loader = create_dataset_offline(opt, video_dir)
 
-        video_outputs = []
-        video_segments = []
-        executions_times = []
+def classify_video_offline(class_names, model, opt):
+    device = torch.device('cpu' if opt.no_cuda else 'cuda')
 
-        with torch.no_grad():
-            for i, (inputs, segments) in enumerate(data_loader):
-                start_time = time.time()
+    data_loader = create_dataset_offline(opt)
 
-                outputs = model(inputs)
-                end_time = time.time()
+    model.eval()
 
-                execution_time = end_time - start_time
+    accuracies = AverageMeter()
 
-                print("--- Execution time for segment {}: {} seconds ---".format(segments, execution_time))
-                executions_times.append(execution_time)
+    class_size = len(class_names)
+    class_idx = list(range(0, class_size))
 
-                video_outputs.append(outputs.cpu().data)
-                video_segments.append(segments)
+    ground_truth_labels = []
+    predicted_labels = []
+    executions_times = []
 
-        video_outputs = torch.cat(video_outputs)
-        video_segments = torch.cat(video_segments)
+    print('Starting prediction phase')
 
-        # for execTimeIdx in range(len(executions_times)):
-        #     print('i: {}, execTime: {}'.format(execTimeIdx, executions_times[execTimeIdx]))
-        #
-        # for i in range(video_outputs.size(0)):
-        #     print("i: {}, segments: {}".format(i, video_segments[i].tolist()))
+    with torch.no_grad():
+        for i, (inputs, targets) in enumerate(data_loader):
+            targets = targets.to(device, non_blocking=True)
 
-        executions_times_with_video_name = {}
-        # TODO maybe this can be generalized when lengths differs
-        # Must be 1 to make sure that len(exec_times) == len(segments)
-        if batch_size == 1:
+            start_time = time.time()
+            outputs = model(inputs)
+            end_time = time.time()
 
-            exec_times_with_segments = []
+            execution_time = end_time - start_time
+            print(f'Execution time: {execution_time}')
 
-            for i in range(video_outputs.size(0)):
-                segment = video_segments[i].tolist()
-                exec_time = executions_times[i]
+            executions_times.append(execution_time)
+            acc = calculate_accuracy(outputs, targets)
 
-                exec_times_with_segments.append((segment, exec_time))
+            ground_truth, predictions = ground_truth_and_predictions(outputs, targets)
+            print(ground_truth)
+            print(predictions)
+            ground_truth_labels.extend(ground_truth)
+            predicted_labels.extend(predictions)
 
-            executions_times_with_video_name = {
-                video_name: exec_times_with_segments
-            }
+            accuracies.update(acc, inputs.size(0))
 
-            print('Exec times final result with video name: {}'.format(executions_times_with_video_name))
+        accuracies_avg = accuracies.avg
+
+        precision, recall, fscore, _ = \
+            precision_recall_fscore_support(ground_truth_labels,
+                                            predicted_labels,
+                                            labels=class_idx)
+
+        mean_exec_times = np.mean(executions_times)
+        std_exec_times = np.std(executions_times)
+
+        print(f'Acc:{accuracies_avg}')
+        print(f'prec: {precision}')
+        print(f'rec: {recall}')
+        print(f'f-score: {fscore}')
+        print(mean_exec_times)
+        print(std_exec_times)
+
+        with open(opt.output_csv, 'w+') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            header = ["VIDEO_NAME", "MEAN_PREDICTION_TIME", "STANDARD_DEV_PREDICTION_TIME", "ACCURACY"]
+
+            create_column_metric_csv_header("PRECISION", class_names, header)
+            create_column_metric_csv_header("RECALL", class_names, header)
+            create_column_metric_csv_header("F-SCORE", class_names, header)
+
+            writer.writerow(header)
+
+            final_row = ['Metrics_overall_dataset', mean_exec_times, std_exec_times, accuracies_avg]
+
+            create_column_metric_csv_content(precision, final_row)
+            create_column_metric_csv_content(recall, final_row)
+            create_column_metric_csv_content(fscore, final_row)
+
+            writer.writerow(final_row)
+
+
+def get_normalize_method(mean, std, no_mean_norm, no_std_norm):
+    if no_mean_norm:
+        if no_std_norm:
+            return Normalize([0, 0, 0], [1, 1, 1])
         else:
-            print('Resulting exec times cannot be calculated since length of segments and exec times may differ.')
-
-        results = {
-            'video': video_name,
-            'clips': []
-        }
-
-        _, max_indices = video_outputs.max(dim=1)
-        for i in range(video_outputs.size(0)):
-            clip_results = {
-                'segment': video_segments[i].tolist(),
-            }
-
-            if opt.mode == 'score':
-                clip_results['label'] = class_names[max_indices[i]]
-                clip_results['scores'] = video_outputs[i].tolist()
-            elif opt.mode == 'feature':
-                clip_results['features'] = video_outputs[i].tolist()
-
-            results['clips'].append(clip_results)
-
-    return results, executions_times_with_video_name
+            return Normalize([0, 0, 0], std)
+    else:
+        if no_std_norm:
+            return Normalize(mean, [1, 1, 1])
+        else:
+            return Normalize(mean, std)
 
 
-def create_dataset_offline(opt, video_dir):
-    batch_size = opt.batch_size_multiplier
+def create_dataset_offline(opt):
+    opt.mean, opt.std = get_mean_std(opt.value_scale, dataset=opt.mean_dataset)
 
-    # TODO check se ha senso Scale + Crop stessa dimensione
-    spatial_transform = Compose([Scale(opt.sample_size),
-                                 CenterCrop(opt.sample_size),
-                                 ToTensor(),
-                                 Normalize(opt.mean, [1, 1, 1])])
+    normalize = get_normalize_method(opt.mean, opt.std, opt.no_mean_norm,
+                                     opt.no_std_norm)
+    spatial_transform = [Resize(opt.sample_size),
+                         CenterCrop(opt.sample_size),
+                         ToTensor(),
+                         ScaleValue(opt.value_scale),
+                         normalize]
+    spatial_transform = Compose(spatial_transform)
 
-    # Considera opt.sample_duration numero di frames quando esegue le predictions
-    temporal_transform = LoopPadding(opt.sample_duration)
-    data = Video(video_dir, spatial_transform=spatial_transform,
-                 temporal_transform=temporal_transform,
-                 sample_duration=opt.sample_duration)
-    data_loader = torch.utils.data.DataLoader(data, batch_size=batch_size,
-                                              shuffle=False, num_workers=opt.n_threads, pin_memory=True)
-    return batch_size, data_loader
+    temporal_transform = []
+    if opt.sample_t_stride > 1:
+        temporal_transform.append(TemporalSubsampling(opt.sample_t_stride))
+    temporal_transform.append(
+        TemporalEvenCrop(opt.sample_duration, opt.n_val_samples))
+    temporal_transform = TemporalCompose(temporal_transform)
+
+    validation_data, collate_fn = get_validation_data(
+        opt.video_root, opt.annotation_path,
+        spatial_transform, temporal_transform)
+    val_loader = torch.utils.data.DataLoader(validation_data,
+                                             batch_size=opt.batch_size_prediction,
+                                             shuffle=False,
+                                             num_workers=opt.n_threads,
+                                             pin_memory=True,
+                                             worker_init_fn=worker_init_fn,
+                                             collate_fn=collate_fn)
+
+    return val_loader
 
 
 def classify_video_online(frames_list, current_starting_frame_index, class_names, model, opt):

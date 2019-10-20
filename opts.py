@@ -1,5 +1,5 @@
 import argparse
-
+from pathlib import Path
 
 def parse_opts():
     parser = argparse.ArgumentParser()
@@ -19,6 +19,8 @@ def parse_opts():
                         help='Batch Size multiplier. For example, if 2 it'
                              'means that the DataLoader will load sample_duration x 2 frames'
                              'at a time')
+    parser.add_argument('--batch_size_prediction', default=1, type=int,
+                        help='Batch Size when loading data in Dataloader')
     parser.add_argument('--sample_duration', default=16, type=int,
                         help='The sample duration, i.e. how many frames to take when predicting')
     parser.add_argument('--n_threads', default=4, type=int, help='Number of threads for multi-thread loading')
@@ -41,7 +43,39 @@ def parse_opts():
                         help='If activated, the video frames will be used instead of a video. The video_root must contain '
                              'subfolders, each one representing a target class and containing a set of frames. '
                              'Applicable only when using opencv.')
-
+    parser.add_argument(
+        '--value_scale',
+        default=1,
+        type=int,
+        help=
+        'If 1, range of inputs is [0-1]. If 255, range of inputs is [0-255].')
+    parser.add_argument('--mean_dataset',
+                        default='kinetics',
+                        type=str,
+                        help=('dataset for mean values of mean subtraction'
+                              '(activitynet | kinetics)'))
+    parser.add_argument('--no_mean_norm',
+                        action='store_true',
+                        help='If true, inputs are not normalized by mean.')
+    parser.add_argument(
+        '--no_std_norm',
+        action='store_true',
+        help='If true, inputs are not normalized by standard deviation.')
+    parser.add_argument(
+        '--sample_t_stride',
+        default=1,
+        type=int,
+        help='If larger than 1, input frames are subsampled with the stride.')
+    parser.add_argument('--n_val_samples',
+                        default=3,
+                        type=int,
+                        help='Number of validation samples for each activity')
+    parser.add_argument('--output_csv', default='metrics.csv', type=str,
+                        help='The output path of the csv with the calculated results')
+    parser.add_argument('--annotation_path',
+                        default=None,
+                        type=Path,
+                        help='Annotation file path')
     args = parser.parse_args()
 
     return args

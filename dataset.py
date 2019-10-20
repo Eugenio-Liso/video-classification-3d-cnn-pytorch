@@ -1,144 +1,25 @@
-import torch
-import torch.utils.data as data
-from PIL import Image
-import os
-import math
-import functools
-import copy
+from datasets.loader import VideoLoader
+from datasets.videodataset_multiclips import (VideoDatasetMultiClips,
+                                              collate_fn)
+from pathlib import Path
+from os.path import join
+def get_validation_data(video_path,
+                        annotation_path,
+                        spatial_transform=None,
+                        temporal_transform=None,
+                        target_transform=None):
+    loader = VideoLoader(lambda x: f'image_{x:05d}.jpg')
+    video_path_formatter = (
+        lambda root_path, label, video_id: Path(join(root_path, label, video_id)))
 
+    validation_data = VideoDatasetMultiClips(
+        video_path,
+        annotation_path,
+        'validation',
+        spatial_transform=spatial_transform,
+        temporal_transform=temporal_transform,
+        target_transform=target_transform,
+        video_loader=loader,
+        video_path_formatter=video_path_formatter)
 
-def pil_loader(path):
-    # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
-    with open(path, 'rb') as f:
-        with Image.open(f) as img:
-            return img.convert('RGB')
-
-
-def accimage_loader(path):
-    try:
-        return accimage.Image(path)
-    except IOError:
-        # Potentially a decoding problem, fall back to PIL.Image
-        return pil_loader(path)
-
-
-def get_default_image_loader():
-    from torchvision import get_image_backend
-    if get_image_backend() == 'accimage':
-        import accimage
-        return accimage_loader
-    else:
-        return pil_loader
-
-
-def video_loader(video_dir_path, frame_indices, image_loader):
-    video = []
-    for i in frame_indices:
-        image_path = os.path.join(video_dir_path, 'image_{:05d}.jpg'.format(i))
-        if os.path.exists(image_path):
-            video.append(image_loader(image_path))
-        else:
-            return video
-
-    return video
-
-
-def get_default_video_loader():
-    image_loader = get_default_image_loader()
-    return functools.partial(video_loader, image_loader=image_loader)
-
-
-def get_class_labels(data):
-    class_labels_map = {}
-    index = 0
-    for class_label in data['labels']:
-        class_labels_map[class_label] = index
-        index += 1
-    return class_labels_map
-
-
-def get_video_names_and_annotations(data, subset):
-    video_names = []
-    annotations = []
-
-    for key, value in data['database'].items():
-        this_subset = value['subset']
-        if this_subset == subset:
-            if subset == 'testing':
-                video_names.append('test/{}'.format(key))
-            else:
-                label = value['annotations']['label']
-                video_names.append('{}/{}'.format(label, key))
-                annotations.append(value['annotations'])
-
-    return video_names, annotations
-
-
-def make_dataset(video_path, sample_duration):
-    dataset = []
-
-    n_frames = len(os.listdir(video_path))
-
-    begin_t = 1
-    end_t = n_frames
-    sample = {
-        'video': video_path,
-        'segment': [begin_t, end_t],
-        'n_frames': n_frames,
-    }
-
-    max_index = (n_frames + 1)
-    idx = 1
-    while idx < max_index:
-        lookahead = idx + sample_duration
-        sample_i = copy.deepcopy(sample)
-
-        if lookahead > n_frames:
-            new_start_idx = idx - (lookahead - max_index)
-            sample_i['frame_indices'] = list(range(new_start_idx, new_start_idx + sample_duration))
-            sample_i['segment'] = torch.IntTensor([new_start_idx, new_start_idx + sample_duration - 1])
-        else:
-            sample_i['frame_indices'] = list(range(idx, idx + sample_duration))
-            sample_i['segment'] = torch.IntTensor([idx, idx + sample_duration - 1])
-
-        dataset.append(sample_i)
-        idx = lookahead
-
-    return dataset
-
-
-class Video(data.Dataset):
-    def __init__(self, video_path,
-                 spatial_transform=None, temporal_transform=None,
-                 sample_duration=16, get_loader=get_default_video_loader):
-        self.data = make_dataset(video_path, sample_duration)
-
-        self.spatial_transform = spatial_transform
-        self.temporal_transform = temporal_transform
-        self.loader = get_loader()
-
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-        Returns:
-            tuple: (image, target) where target is class_index of the target class.
-        """
-        path = self.data[index]['video']
-
-        frame_indices = self.data[index]['frame_indices']
-        if self.temporal_transform is not None:
-            frame_indices = self.temporal_transform(frame_indices)
-        clip = self.loader(path, frame_indices)
-        if self.spatial_transform is not None:
-            clip = [self.spatial_transform(img) for img in clip]
-        if not clip:
-            print(clip)
-        clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
-
-        target = self.data[index]['segment']
-
-        return clip, target
-
-    def __len__(self):
-        return len(self.data)
+    return validation_data, collate_fn

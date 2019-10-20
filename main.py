@@ -1,22 +1,20 @@
-import os
-import sys
+import gc
 import json
+import os
+import statistics
 import subprocess
+
+import cv2 as cv
 import numpy as np
 import torch
-from torch import nn
-import ctypes
-
-from opts import parse_opts
-from model import generate_model
-from mean import get_mean
-from classify import classify_video_offline
-import gc
-import statistics
-from logging_utils import logger_factory as lf
-import cv2 as cv
-from classify import classify_video_online
 from PIL import Image
+
+from classify import classify_video_offline
+from classify import classify_video_online
+from logging_utils import logger_factory as lf
+from mean import get_mean
+from model import generate_model
+from opts import parse_opts
 
 logger = lf.getBasicLogger(os.path.basename(__file__))
 
@@ -94,18 +92,10 @@ if __name__ == "__main__":
     executions_times_with_video_names = []
 
     if using_frames:
-        for target_class in os.listdir(input_video_dir):
-            target_dir = os.path.join(input_video_dir, target_class)
+        classify_video_offline(class_names, model, opt)
+        print(f'Prediction phase completed! Output metrics csv written in path: {opt.output_csv}')
+        exit(0)
 
-            for video_id in os.listdir(target_dir):
-                video_dir = os.path.join(target_dir, video_id)
-
-                result, exec_times_with_video_name_on_prediction = \
-                    classify_video_offline(video_dir, video_id, class_names, model, opt)
-
-                if result is not None and exec_times_with_video_name_on_prediction is not None:
-                    outputs.append(result)
-                    executions_times_with_video_names.append(exec_times_with_video_name_on_prediction)
     else:
         logger.info('Input video files: {}'.format(input_video_files))
 
@@ -120,8 +110,7 @@ if __name__ == "__main__":
                     subprocess.call('ffmpeg -hide_banner -loglevel error -i "{}" tmp/image_%05d.jpg'.format(video_path),
                                     shell=True)
 
-                    result, exec_times_with_video_name_on_prediction = classify_video_offline('tmp', input_file,
-                                                                                              class_names, model,
+                    result, exec_times_with_video_name_on_prediction = classify_video_offline(class_names, model,
                                                                                               opt)
                 elif prediction_input_mode == 'opencv':
 
@@ -130,8 +119,9 @@ if __name__ == "__main__":
                         input_dir = "tmp"
                         vidcap = cv.VideoCapture(video_path)
 
-                        logger.info('Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
-                            vidcap.get(5)))
+                        logger.info(
+                            'Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
+                                vidcap.get(5)))
 
                         logger.info("Reading frames...")
 
