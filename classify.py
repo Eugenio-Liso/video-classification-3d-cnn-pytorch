@@ -82,12 +82,12 @@ def classify_video_offline(class_names, model, opt):
         mean_exec_times = np.mean(executions_times)
         std_exec_times = np.std(executions_times)
 
-        print(f'Acc:{accuracies_avg}')
-        print(f'prec: {precision}')
-        print(f'rec: {recall}')
-        print(f'f-score: {fscore}')
-        print(mean_exec_times)
-        print(std_exec_times)
+        # print(f'Acc:{accuracies_avg}')
+        # print(f'prec: {precision}')
+        # print(f'rec: {recall}')
+        # print(f'f-score: {fscore}')
+        # print(mean_exec_times)
+        # print(std_exec_times)
 
         with open(opt.output_csv, 'w+') as csv_file:
             writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
