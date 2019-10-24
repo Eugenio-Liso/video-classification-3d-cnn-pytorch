@@ -59,7 +59,7 @@ def classify_video_offline(class_names, model, opt):
             execution_time = (end_time - start_time)
             # print(len(inputs))
             # print(len(targets))
-            print(f'Execution time: {execution_time}')
+            # print(f'Execution time: {execution_time}')
 
             executions_times.append(execution_time)
             acc = calculate_accuracy(outputs, targets)
