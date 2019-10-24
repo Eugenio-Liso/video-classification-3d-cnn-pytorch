@@ -17,6 +17,8 @@ def parse_opts_metrics_plot():
     parser.add_argument('--output_plot', type=Path,
                         help='Output path of the plot containing the calculated metrics')
     parser.add_argument("--rename_target_class", type=json.loads, help="Optional classes to rename", default={})
+    parser.add_argument("--x_size", type=int, help="Size of the whole plot in cm on X axis", default=35)
+    parser.add_argument("--y_size", type=int, help="Size of the whole plot in cm on Y axis", default=35)
 
     args = parser.parse_args()
 

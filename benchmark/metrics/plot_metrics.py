@@ -72,8 +72,12 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, cmap, mean
 
 if __name__ == '__main__':
     opt = parse_opts_metrics_plot()
+
+    x_size = opt.x_size
+    y_size = opt.y_size
+
     plt.rc('font', family='serif')
-    _ = plt.figure('Testing Metrics', figsize=cm2inch(35, 35), dpi=80)
+    _ = plt.figure('Testing Metrics', figsize=cm2inch(x_size, y_size), dpi=80)
     input_csv = opt.input_csv
     classes_list = opt.classes_list
     merge = opt.merge
