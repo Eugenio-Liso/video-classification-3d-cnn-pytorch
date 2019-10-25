@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from torch import device
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
 
@@ -25,6 +26,7 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
 def calculate_accuracy(outputs, targets):
     with torch.no_grad():
         batch_size = targets.size(0)
@@ -39,6 +41,7 @@ def calculate_accuracy(outputs, targets):
 
 def class_counts(x): return 1 if x > 0 else 0
 
+
 def worker_init_fn(worker_id):
     torch_seed = torch.initial_seed()
 
@@ -48,6 +51,7 @@ def worker_init_fn(worker_id):
         torch_seed = torch_seed % 2 ** 32
     np.random.seed(torch_seed + worker_id)
 
+
 def ground_truth_and_predictions(outputs, targets):
     with torch.no_grad():
         _, pred = outputs.topk(1, 1, largest=True, sorted=True)
@@ -56,6 +60,7 @@ def ground_truth_and_predictions(outputs, targets):
         predictions = pred.cpu().numpy()
 
         return ground_truth, predictions
+
 
 def get_mean_std(value_scale, dataset):
     assert dataset in ['activitynet', 'kinetics']
