@@ -1,19 +1,16 @@
 from datasets.loader import VideoLoader
 from datasets.videodataset_multiclips import (VideoDatasetMultiClips,
                                               collate_fn)
-from pathlib import Path
-from os.path import join
 
 
 def get_validation_data(video_path,
                         annotation_path,
                         sample_duration,
+                        video_path_formatter,
                         spatial_transform=None,
                         temporal_transform=None,
                         target_transform=None):
     loader = VideoLoader(lambda x: f'image_{x:05d}.jpg')
-    video_path_formatter = (
-        lambda root_path, label, video_id: Path(join(root_path, label, video_id)))
 
     # TODO allow a more general way to specify validation or test
     # Right now, with validation we mean 'test set', so if in training you have

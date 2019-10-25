@@ -32,17 +32,13 @@ def parse_opts():
     parser.add_argument('--no_cuda', action='store_true', help='If true, cuda is not used.')
     parser.add_argument('--verbose', action='store_true', help='')
     parser.set_defaults(verbose=False)
-    parser.add_argument('--prediction_input_mode', default='opencv', type=str,
-                        help='If legacy, the input data will be processed with FFMPEG. If opencv, data will be loaded '
-                             'with opencv.')
     parser.add_argument('--type_of_prediction', default='offline', type=str,
                         help='If offline, the frames will be extracted from the video and predictions will be done on '
                              'them. If live, predictions will be showed in real time. This option can be used only '
                              'when prediction_input_mode is set to opencv.')
     parser.add_argument('--frames', action='store_true',
                         help='If activated, the video frames will be used instead of a video. The video_root must contain '
-                             'subfolders, each one representing a target class and containing a set of frames. '
-                             'Applicable only when using opencv.')
+                             'subfolders, each one representing a target class and containing a set of frames.')
     parser.add_argument(
         '--value_scale',
         default=1,

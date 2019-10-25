@@ -16,7 +16,8 @@ from temporal_transforms import (TemporalSubsampling, TemporalNonOverlappingWind
                                  TemporalEvenCrop)
 from utils import AverageMeter, calculate_accuracy, ground_truth_and_predictions
 from utils import worker_init_fn, get_mean_std
-
+from os.path import join
+from pathlib import Path
 warnings.filterwarnings('ignore', message='(.*)Precision and F-score are ill-defined(.*)')
 warnings.filterwarnings('ignore', message='(.*)Recall and F-score are ill-defined(.*)')
 
@@ -37,10 +38,10 @@ def flatten(list_elems):
     return [item for sublist in list_elems for item in sublist]
 
 
-def classify_video_offline(class_names, model, opt):
+def classify_video_offline(class_names, model, opt, video_path_formatter=lambda root_path, label, video_id: Path(join(root_path, label, video_id))):
     device = torch.device('cpu' if opt.no_cuda else 'cuda')
 
-    data_loader = create_dataset_offline(opt)
+    data_loader = create_dataset_offline(opt, video_path_formatter)
 
     accuracies = AverageMeter()
 
@@ -63,6 +64,7 @@ def classify_video_offline(class_names, model, opt):
             # One video at a time
             video_name = video_name[0]
             segments = segments[0]
+            print(f'Giving input {video_name} to the NN...')
 
             start_time = time.time()
             outputs = model(inputs)
@@ -102,8 +104,6 @@ def classify_video_offline(class_names, model, opt):
             executions_times_with_video_name = {
                 video_name: exec_times_with_segments
             }
-
-            print('Exec times final result with video name: {}'.format(executions_times_with_video_name))
 
             single_video_result = {
                 'video': video_name,
@@ -177,27 +177,11 @@ def get_normalize_method(mean, std, no_mean_norm, no_std_norm):
             return Normalize(mean, std)
 
 
-def create_dataset_offline(opt):
-    opt.mean, opt.std = get_mean_std(opt.value_scale, dataset=opt.mean_dataset)
-
-    normalize = get_normalize_method(opt.mean, opt.std, opt.no_mean_norm,
-                                     opt.no_std_norm)
-    spatial_transform = [Resize(opt.sample_size),
-                         CenterCrop(opt.sample_size),
-                         ToTensor(),
-                         ScaleValue(opt.value_scale),
-                         normalize]
-    spatial_transform = Compose(spatial_transform)
-
-    temporal_transform = []
-    if opt.sample_t_stride > 1:
-        temporal_transform.append(TemporalSubsampling(opt.sample_t_stride))
-    temporal_transform.append(
-        TemporalNonOverlappingWindow(opt.sample_duration))
-    temporal_transform = TemporalCompose(temporal_transform)
+def create_dataset_offline(opt, video_path_formatter):
+    spatial_transform, temporal_transform = retrieve_spatial_temporal_transforms(opt)
 
     validation_data, collate_fn = get_validation_data(
-        opt.video_root, opt.annotation_path, opt.sample_duration,
+        opt.video_root, opt.annotation_path, opt.sample_duration, video_path_formatter,
         spatial_transform, temporal_transform)
     val_loader = torch.utils.data.DataLoader(validation_data,
                                              batch_size=opt.batch_size_prediction,
@@ -208,6 +192,25 @@ def create_dataset_offline(opt):
                                              collate_fn=collate_fn)
 
     return val_loader
+
+
+def retrieve_spatial_temporal_transforms(opt):
+    opt.mean, opt.std = get_mean_std(opt.value_scale, dataset=opt.mean_dataset)
+    normalize = get_normalize_method(opt.mean, opt.std, opt.no_mean_norm,
+                                     opt.no_std_norm)
+    spatial_transform = [Resize(opt.sample_size),
+                         CenterCrop(opt.sample_size),
+                         ToTensor(),
+                         ScaleValue(opt.value_scale),
+                         normalize]
+    spatial_transform = Compose(spatial_transform)
+    temporal_transform = []
+    if opt.sample_t_stride > 1:
+        temporal_transform.append(TemporalSubsampling(opt.sample_t_stride))
+    temporal_transform.append(
+        TemporalNonOverlappingWindow(opt.sample_duration))
+    temporal_transform = TemporalCompose(temporal_transform)
+    return spatial_transform, temporal_transform
 
 
 def classify_video_online(frames_list, current_starting_frame_index, class_names, model, opt):
