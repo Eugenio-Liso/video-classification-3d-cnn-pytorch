@@ -196,9 +196,8 @@ if __name__ == "__main__":
 
                     # Color in BGR!
                     min_length = min(width, height)
-                    textsize = \
-                    cv.getTextSize(text_with_prediction, fontFace=font, fontScale=font_size, thickness=thickness_text)[
-                        0]
+                    textsize = cv.getTextSize(text_with_prediction, fontFace=font, fontScale=font_size,
+                                       thickness=thickness_text)[0]
                     x = int(font_size * 50)
                     y = int(font_size * 25)
                     x_offset = x
