@@ -16,7 +16,9 @@ from mean import get_mean
 from model import generate_model
 from opts import parse_opts
 from pathlib import Path
+
 logger = lf.getBasicLogger(os.path.basename(__file__))
+from classify import retrieve_spatial_temporal_transforms
 
 
 # https://discuss.pytorch.org/t/how-to-debug-causes-of-gpu-memory-leaks/6741/18
@@ -127,7 +129,8 @@ if __name__ == "__main__":
 
             # Exclude label from input_dir
             all_video_results, all_execution_times = \
-                classify_video_offline(class_names, model, opt, lambda root_path, label, video_id: Path(os.path.join(root_path, video_id)))
+                classify_video_offline(class_names, model, opt,
+                                       lambda root_path, label, video_id: Path(os.path.join(root_path, video_id)))
             print(f'Prediction phase completed! Output metrics csv written in path: {opt.output_csv}')
             outputs = all_video_results
             executions_times_with_video_names = all_execution_times
@@ -156,23 +159,41 @@ if __name__ == "__main__":
 
                 font = cv.FONT_HERSHEY_COMPLEX
 
+                single_video_result = {
+                    'video': input_file,
+                    'clips': []
+                }
+
+                exec_times_with_segments = []
+
                 while success:
                     frame_list.append(frame)
 
-                    # TODO check se sample_duration può essere cambiata (il batch size riguarda il come caricare
-                    #  i frame, mentre la sample_duration è la lunghezza della clip)
+                    # Does not do all the predictions if the input video has a number of frames X such that X % opt.sample_duration != 0
+                    # In other words, the last frames that do not fit into a 'opt.sample_duration' batch will be discarded
                     if count % opt.sample_duration == 0:
                         frames_as_images = [Image.fromarray(np.array(frame), 'RGB') for frame in frame_list]
 
-                        result, exec_times_with_video_name_on_prediction = \
-                            classify_video_online(frames_as_images, count, class_names, model, opt)
+                        spatial_transform, _ = retrieve_spatial_temporal_transforms(opt)
 
-                        text_with_prediction = result[0]
+                        if spatial_transform is not None:
+                            spatial_transform.randomize_parameters()
+                            frames_as_images = [spatial_transform(img) for img in frames_as_images]
+
+                        frames_as_images = torch.stack(frames_as_images, 0).permute(1, 0, 2, 3)
+
+                        # Adding batch ID as first dimension. Automatically fills it with value 1
+                        frames_as_images = frames_as_images[None, :, :, :, :]
+
+                        text_with_prediction = \
+                            classify_video_online(frames_as_images, count, class_names, model, opt,
+                                                  single_video_result, exec_times_with_segments)
+
                         frame_list.clear()
 
                     # Color in BGR!
                     cv.putText(frame, text_with_prediction, (int(width * 0.40), int(height * 0.10)), font, 1,
-                               (0, 0, 255), 3, cv.LINE_AA)
+                               (0, 0, 0), 3, cv.LINE_AA)
 
                     # Disegna predizione da quel frame in poi, fino alla prossima prediction
                     # cv.namedWindow('Frame', cv.WINDOW_NORMAL)
@@ -184,12 +205,16 @@ if __name__ == "__main__":
                     success, frame = cap.read()
                     count += 1
 
+                single_video_exec_time = {
+                    input_file: exec_times_with_segments
+                }
+
+                outputs.append(single_video_result)
+                executions_times_with_video_names.append(single_video_exec_time)
+
                 cap.release()
                 cv.destroyAllWindows()
 
-                # TODO riempire
-                result = []
-                exec_times_with_video_name_on_prediction = []
         else:
             raise ValueError(
                 'Got input parameter for prediction type: ' +
@@ -200,7 +225,7 @@ if __name__ == "__main__":
         subprocess.call('rm -rf tmp/*', shell=True)
 
     with open(opt.output, 'w') as f:
-        json.dump(outputs, f)
+        json.dump(outputs, f, indent=4)
 
     mean_execution_times = {}
 

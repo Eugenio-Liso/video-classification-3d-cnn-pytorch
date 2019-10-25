@@ -3,21 +3,20 @@ import os
 import time
 # Removes useless warning when precision, recall or fscore are zero
 import warnings
+from os.path import join
+from pathlib import Path
 
 import numpy as np
 import torch
 from sklearn.metrics import precision_recall_fscore_support
-from torch.autograd import Variable
 
 from dataset import get_validation_data
 from logging_utils import logger_factory as lf
-from spatial_transforms import (Resize, ScaleValue, Compose, Normalize, Scale, CenterCrop, ToTensor)
-from temporal_transforms import (TemporalSubsampling, TemporalNonOverlappingWindow, Compose as TemporalCompose,
-                                 TemporalEvenCrop)
+from spatial_transforms import (Resize, ScaleValue, Compose, Normalize, CenterCrop, ToTensor)
+from temporal_transforms import (TemporalSubsampling, TemporalNonOverlappingWindow, Compose as TemporalCompose)
 from utils import AverageMeter, calculate_accuracy, ground_truth_and_predictions
 from utils import worker_init_fn, get_mean_std
-from os.path import join
-from pathlib import Path
+
 warnings.filterwarnings('ignore', message='(.*)Precision and F-score are ill-defined(.*)')
 warnings.filterwarnings('ignore', message='(.*)Recall and F-score are ill-defined(.*)')
 
@@ -38,7 +37,8 @@ def flatten(list_elems):
     return [item for sublist in list_elems for item in sublist]
 
 
-def classify_video_offline(class_names, model, opt, video_path_formatter=lambda root_path, label, video_id: Path(join(root_path, label, video_id))):
+def classify_video_offline(class_names, model, opt, video_path_formatter=lambda root_path, label, video_id: Path(
+    join(root_path, label, video_id))):
     device = torch.device('cpu' if opt.no_cuda else 'cuda')
 
     data_loader = create_dataset_offline(opt, video_path_formatter)
@@ -213,62 +213,43 @@ def retrieve_spatial_temporal_transforms(opt):
     return spatial_transform, temporal_transform
 
 
-def classify_video_online(frames_list, current_starting_frame_index, class_names, model, opt):
+def classify_video_online(input_frames, current_starting_frame_index, class_names, model, opt,
+                          single_video_result, exec_times_with_segments):
     assert opt.mode in ['score', 'feature']
 
-    input_frames, segments = extract_input_live_predictions(current_starting_frame_index, frames_list, opt)
-
-    executions_times = []
-
     logger.debug('Input tensor in live prediction: {}'.format(input_frames.size()))
-    inputs = Variable(input_frames, volatile=True)
-    start_time = time.time()
+    segment = [current_starting_frame_index, current_starting_frame_index + opt.sample_duration - 1]
 
-    outputs = model(inputs)
-    end_time = time.time()
+    with torch.no_grad():
+        start_time = time.time()
+        outputs = model(input_frames)
+        end_time = time.time()
 
-    execution_time = end_time - start_time
+        execution_time = (end_time - start_time)
 
-    print("--- Execution time for segment {}: {} seconds ---".format(segments, execution_time))
-    executions_times.append(execution_time)
+        print("--- Execution time for segment {}: {} seconds ---".format(segment, execution_time))
 
-    prediction_output = outputs.cpu().data
+        prediction_scores = outputs.cpu().data
+        _, max_index_predicted_class = prediction_scores.max(dim=1)
+        prediction_scores = flatten(prediction_scores.tolist())
+        predicted_class = class_names[max_index_predicted_class]
 
-    _, max_index_predicted_class = prediction_output.max(dim=1)
+        logger.info('Prediction for frames [{},{}]: {}'
+                    .format(current_starting_frame_index, current_starting_frame_index + opt.sample_duration - 1,
+                            predicted_class))
 
-    predicted_class = class_names[max_index_predicted_class]
+        exec_times_with_segments.append((segment, execution_time))
 
-    logger.info('Prediction for frames [{},{}]: {}'
-                .format(current_starting_frame_index, current_starting_frame_index + opt.sample_duration - 1,
-                        predicted_class))
+        clip_results = {
+            'segment': segment
+        }
 
-    # TODO IF USEFUL, adapt code to return a structure that can be analyzed after (see offline)
-    return [predicted_class], ""
+        if opt.mode == 'score':
+            clip_results['label'] = predicted_class
+            clip_results['scores'] = prediction_scores
+        elif opt.mode == 'feature':
+            clip_results['features'] = prediction_scores
 
+        single_video_result['clips'].append(clip_results)
 
-# Codice adattato da dataset.py
-# TODO ma a che serve restituire segments (i.e. tensore costruito ad hoc? Solo per visualizzazione risultati??)
-def extract_input_live_predictions(current_starting_frame_index, frames_list, opt):
-    batch_size = opt.batch_size_multiplier
-
-    # Non ha senso utilizzare batch size > 1 perchè stiamo facendo predizioni su ogni batch di frame (16 by default)
-    assert batch_size == 1
-
-    # TODO check se ha senso Scale + Crop stessa dimensione
-    spatial_transform = Compose([Scale(opt.sample_size),
-                                 CenterCrop(opt.sample_size),
-                                 ToTensor(),
-                                 Normalize(opt.mean, [1, 1, 1])])
-    # Non utilizzata nella predizione live
-    # temporal_transform = LoopPadding(opt.sample_duration)
-
-    clip = [spatial_transform(img) for img in frames_list]
-
-    clip = torch.stack(clip, 0).permute(1, 0, 2, 3)
-
-    # Adding batch ID as first dimension. Automatically fills it with value 1
-    clip = clip[None, :, :, :, :]
-
-    target = torch.IntTensor([current_starting_frame_index, current_starting_frame_index + opt.sample_duration - 1])
-
-    return clip, target
+        return predicted_class
