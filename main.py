@@ -140,6 +140,9 @@ if __name__ == "__main__":
                 video_path = os.path.join(input_video_dir, input_file)
                 logger.info('Prediction on input: {}'.format(video_path))
 
+                thickness_text = 1
+                font_size = 1
+
                 cap = cv.VideoCapture(video_path)
 
                 width = int(cap.get(3))
@@ -192,8 +195,18 @@ if __name__ == "__main__":
                         frame_list.clear()
 
                     # Color in BGR!
-                    cv.putText(frame, text_with_prediction, (int(width * 0.40), int(height * 0.10)), font, 1,
-                               (0, 0, 0), 3, cv.LINE_AA)
+                    min_length = min(width, height)
+                    textsize = \
+                    cv.getTextSize(text_with_prediction, fontFace=font, fontScale=font_size, thickness=thickness_text)[
+                        0]
+                    x = int(font_size * 50)
+                    y = int(font_size * 25)
+                    x_offset = x
+                    y_offset = y
+                    cv.rectangle(frame, (x, y), (x + textsize[0] + x_offset * 2, y + textsize[1] + y_offset * 2),
+                                 (30, 30, 30), cv.FILLED)
+                    cv.putText(frame, text_with_prediction, (x + x_offset, y + y_offset * 2), font, font_size,
+                               (235, 235, 235), thickness_text, cv.LINE_AA)
 
                     # Disegna predizione da quel frame in poi, fino alla prossima prediction
                     # cv.namedWindow('Frame', cv.WINDOW_NORMAL)
