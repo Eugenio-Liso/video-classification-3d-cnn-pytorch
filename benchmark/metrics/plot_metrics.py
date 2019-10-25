@@ -7,16 +7,19 @@ import seaborn as sns
 from opts_metrics_plot import parse_opts_metrics_plot
 import matplotlib.cm as cm
 from matplotlib.colors import Normalize
+import collections
 sns.set()
+
 
 # from matplotlib.ticker import FormatStrFormatter
 
 def cm2inch(*tupl):
     inch = 2.54
     if isinstance(tupl[0], tuple):
-        return tuple(i/inch for i in tupl[0])
+        return tuple(i / inch for i in tupl[0])
     else:
-        return tuple(i/inch for i in tupl)
+        return tuple(i / inch for i in tupl)
+
 
 def get_metric(class_names, idx_metrics, row):
     result = []
@@ -58,14 +61,16 @@ def build_plot(idx_chart, classes_metric, class_names, x_axis, title, cmap, padT
     #     barlist[1].set_color('g')
     #     barlist[2].set_color('r')
 
-    if mean_prediction_time is not None and std_prediction_time is not None and mean_accuracy_value is not None:
+    if mean_accuracy_keys is not None and std_prediction_time is not None and mean_prediction_time is not None:
+        printed_str = ''
+        for index, keyName in enumerate(mean_accuracy_keys):
+            printed_str += f'Accuracy on {keyName}: {"{:.4f}".format(float(mean_accuracy_keys[keyName]))} ' \
+                           f'- Mean pred time: {"{:.5f}".format(float(mean_prediction_time[index]))} ' \
+                           f'- STD pred time: {"{:.5f}".format(float(std_prediction_time[index]))}\n'
+        plt.xlabel(printed_str)
+    elif mean_prediction_time is not None and std_prediction_time is not None and mean_accuracy_value is not None:
         plt.xlabel(
             f'\nMean prediction time: {mean_prediction_time} secs - STD prediction time: {std_prediction_time} secs - Accuracy: {mean_accuracy_value}')
-    elif mean_accuracy_keys is not None:
-        printed_str = ''
-        for keyName, acc in mean_accuracy_keys.items():
-            printed_str += f'Accuracy on {keyName}: {"{:.4f}".format(float(acc))}\n'
-        plt.xlabel(printed_str)
 
     if padTitle:
         plt.title(title, pad=20)
@@ -149,11 +154,13 @@ if __name__ == '__main__':
                     continue
     else:
         # Also prediction time?
-        mean_accuracies = {}
+        mean_accuracies = collections.OrderedDict()
         classes_precisions = []
         classes_recalls = []
         classes_fscores = []
         dummy_class_names = [filter_on_class]
+        mean_pred_times = []
+        std_pred_times = []
 
         for metric_csv in input_csv:
             class_indexes_for_metrics = []
@@ -179,6 +186,8 @@ if __name__ == '__main__':
                         assert len(class_indexes_for_metrics) == 3, "The class metrics should be three"
 
                     if len(row) != 0 and row[0] == 'Metrics_overall_dataset':
+                        mean_prediction_time = row[1]
+                        std_prediction_time = row[2]
                         mean_accuracy = row[3]
 
                         if '.csv' in accuracy_key:
@@ -192,6 +201,8 @@ if __name__ == '__main__':
                         classes_precisions.extend(class_precision)
                         classes_recalls.extend(class_recall)
                         classes_fscores.extend(class_fscore)
+                        mean_pred_times.append(mean_prediction_time)
+                        std_pred_times.append(std_prediction_time)
 
         if max(max(class_precision), max(class_recall), max(class_fscore)) > 0.95:
             padTitle = True
@@ -199,9 +210,10 @@ if __name__ == '__main__':
             padTitle = False
 
         x_labels = mean_accuracies.keys()
-        build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle)
+        build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,)
         build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
-                   mean_accuracy_keys=mean_accuracies)
+                   mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                   std_prediction_time=std_pred_times)
         build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle)
 
         plt.subplots_adjust(wspace=0.5, hspace=1)
