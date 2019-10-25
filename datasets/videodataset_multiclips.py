@@ -6,10 +6,10 @@ import torch
 from torch.utils.data.dataloader import default_collate
 
 from .videodataset import VideoDataset
-
+import os
 
 def collate_fn(batch):
-    batch_clips, batch_targets = zip(*batch)
+    batch_clips, batch_targets, batch_segments, batch_video_name = zip(*batch)
 
     batch_clips = [clip for multi_clips in batch_clips for clip in multi_clips]
     batch_targets = [
@@ -18,9 +18,9 @@ def collate_fn(batch):
 
     target_element = batch_targets[0]
     if isinstance(target_element, int) or isinstance(target_element, str):
-        return default_collate(batch_clips), default_collate(batch_targets)
+        return default_collate(batch_clips), default_collate(batch_targets), batch_segments, batch_video_name
     else:
-        return default_collate(batch_clips), batch_targets
+        return default_collate(batch_clips), batch_targets, batch_segments, batch_video_name
 
 
 class VideoDatasetMultiClips(VideoDataset):
@@ -47,6 +47,11 @@ class VideoDatasetMultiClips(VideoDataset):
 
         clips, segments = self.__loading(path, video_frame_indices)
 
+        segments_for_output_json = []
+
+        for segment in segments:
+            segments_for_output_json.append([segment[0], segment[-1] - 1])
+
         if isinstance(self.target_type, list):
             target = [self.data[index][t] for t in self.target_type]
         else:
@@ -64,4 +69,6 @@ class VideoDatasetMultiClips(VideoDataset):
         else:
             targets = [target for _ in range(len(segments))]
 
-        return clips, targets
+        video_name = os.path.basename(os.path.normpath(self.data[index]['video']))
+
+        return clips, targets, segments_for_output_json, video_name
