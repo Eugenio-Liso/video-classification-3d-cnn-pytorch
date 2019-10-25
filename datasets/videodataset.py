@@ -37,6 +37,7 @@ class VideoDataset(data.Dataset):
                  root_path,
                  annotation_path,
                  subset,
+                 sample_duration,
                  augment_filters=None,
                  spatial_transform=None,
                  temporal_transform=None,
@@ -46,7 +47,7 @@ class VideoDataset(data.Dataset):
                  image_name_formatter=lambda x: f'image_{x:05d}.jpg',
                  target_type='label'):
         self.data, self.class_names = self.__make_dataset(
-            root_path, annotation_path, subset, video_path_formatter)
+            root_path, annotation_path, subset, video_path_formatter, sample_duration)
 
         self.augment_filters = augment_filters
         self.spatial_transform = spatial_transform
@@ -61,7 +62,7 @@ class VideoDataset(data.Dataset):
         self.target_type = target_type
 
     def __make_dataset(self, root_path, annotation_path, subset,
-                       video_path_formatter):
+                       video_path_formatter, sample_duration):
         with annotation_path.open('r') as f:
             data = json.load(f)
         video_ids, annotations = get_video_ids_and_annotations(data, subset)
@@ -91,6 +92,11 @@ class VideoDataset(data.Dataset):
             segment = annotations[i]['segment']
             if segment[1] == 1:
                 print(f"Warning: skipping {video_path} since it has only one frame")
+                continue
+
+            if segment[1] < sample_duration:
+                print(f"Warning: skipping {video_path} since it has {segment[1]} frames which do not reach the minimum "
+                      f"of {sample_duration} frames for prediction")
                 continue
 
             frame_indices = list(range(segment[0], segment[1]))
