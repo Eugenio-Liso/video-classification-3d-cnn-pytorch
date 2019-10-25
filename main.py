@@ -92,9 +92,10 @@ if __name__ == "__main__":
     executions_times_with_video_names = []
 
     if using_frames:
-        classify_video_offline(class_names, model, opt)
+        all_video_results, all_execution_times = classify_video_offline(class_names, model, opt)
         print(f'Prediction phase completed! Output metrics csv written in path: {opt.output_csv}')
-        exit(0)
+        outputs = all_video_results
+        executions_times_with_video_names = all_execution_times
 
     else:
         logger.info('Input video files: {}'.format(input_video_files))

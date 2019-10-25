@@ -12,7 +12,8 @@ from torch.autograd import Variable
 from dataset import get_validation_data
 from logging_utils import logger_factory as lf
 from spatial_transforms import (Resize, ScaleValue, Compose, Normalize, Scale, CenterCrop, ToTensor)
-from temporal_transforms import (TemporalSubsampling, TemporalNonOverlappingWindow, Compose as TemporalCompose, TemporalEvenCrop)
+from temporal_transforms import (TemporalSubsampling, TemporalNonOverlappingWindow, Compose as TemporalCompose,
+                                 TemporalEvenCrop)
 from utils import AverageMeter, calculate_accuracy, ground_truth_and_predictions
 from utils import worker_init_fn, get_mean_std
 
@@ -32,6 +33,10 @@ def create_column_metric_csv_header(column_prefix, class_names, header):
         header.append(f"{column_prefix}_{target_class}")
 
 
+def flatten(list_elems):
+    return [item for sublist in list_elems for item in sublist]
+
+
 def classify_video_offline(class_names, model, opt):
     device = torch.device('cpu' if opt.no_cuda else 'cuda')
 
@@ -46,11 +51,18 @@ def classify_video_offline(class_names, model, opt):
     predicted_labels = []
     executions_times = []
 
+    all_video_results = []
+    all_execution_times = []
+
     print('Starting prediction phase')
 
     with torch.no_grad():
-        for _, (inputs, targets) in enumerate(data_loader):
+        for (inputs, targets, segments, video_name) in data_loader:
             targets = targets.to(device, non_blocking=True)
+
+            # One video at a time
+            video_name = video_name[0]
+            segments = segments[0]
 
             start_time = time.time()
             outputs = model(inputs)
@@ -65,12 +77,54 @@ def classify_video_offline(class_names, model, opt):
             acc = calculate_accuracy(outputs, targets)
 
             ground_truth, predictions = ground_truth_and_predictions(outputs, targets)
+            predictions = flatten(predictions)
+
             # print(ground_truth)
             # print(predictions)
             ground_truth_labels.extend(ground_truth)
             predicted_labels.extend(predictions)
 
             accuracies.update(acc, inputs.size(0))
+
+            video_outputs = outputs.cpu().data
+
+            exec_times_with_segments = []
+
+            for i in range(len(segments)):
+                segment = segments[i]
+                # TODO this is not totally correct, but i have no choice here
+                # This is because now, the input frame batches are processed only once and together, so i do not have the
+                # execution time for a single batch
+                exec_time = execution_time
+
+                exec_times_with_segments.append((segment, exec_time))
+
+            executions_times_with_video_name = {
+                video_name: exec_times_with_segments
+            }
+
+            print('Exec times final result with video name: {}'.format(executions_times_with_video_name))
+
+            single_video_result = {
+                'video': video_name,
+                'clips': []
+            }
+
+            for i in range(len(predictions)):
+                clip_results = {
+                    'segment': segments[i]
+                }
+
+                if opt.mode == 'score':
+                    clip_results['label'] = class_names[predictions[i]]
+                    clip_results['scores'] = video_outputs[i].tolist()
+                elif opt.mode == 'feature':
+                    clip_results['features'] = video_outputs[i].tolist()
+
+                single_video_result['clips'].append(clip_results)
+
+            all_video_results.append(single_video_result)
+            all_execution_times.append(executions_times_with_video_name)
 
         accuracies_avg = accuracies.avg
 
@@ -107,6 +161,8 @@ def classify_video_offline(class_names, model, opt):
 
             writer.writerow(final_row)
 
+        return all_video_results, all_execution_times
+
 
 def get_normalize_method(mean, std, no_mean_norm, no_std_norm):
     if no_mean_norm:
@@ -141,7 +197,7 @@ def create_dataset_offline(opt):
     temporal_transform = TemporalCompose(temporal_transform)
 
     validation_data, collate_fn = get_validation_data(
-        opt.video_root, opt.annotation_path,
+        opt.video_root, opt.annotation_path, opt.sample_duration,
         spatial_transform, temporal_transform)
     val_loader = torch.utils.data.DataLoader(validation_data,
                                              batch_size=opt.batch_size_prediction,
