@@ -134,7 +134,7 @@ if __name__ == '__main__':
                     std_prediction_time = '{:.4f}'.format(float(std_prediction_time))
                     mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
 
-                    if max(max(class_precision), max(class_recall), max(class_fscore)) > 0.95:
+                    if max(max(class_precision), max(class_recall), max(class_fscore)) > 0.98:
                         padTitle = True
                     else:
                         padTitle = False
@@ -204,7 +204,7 @@ if __name__ == '__main__':
                         mean_pred_times.append(mean_prediction_time)
                         std_pred_times.append(std_prediction_time)
 
-        if max(max(class_precision), max(class_recall), max(class_fscore)) > 0.95:
+        if max(max(class_precision), max(class_recall), max(class_fscore)) > 0.98:
             padTitle = True
         else:
             padTitle = False
