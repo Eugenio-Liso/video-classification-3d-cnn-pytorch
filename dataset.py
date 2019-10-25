@@ -7,6 +7,7 @@ from os.path import join
 
 def get_validation_data(video_path,
                         annotation_path,
+                        sample_duration,
                         spatial_transform=None,
                         temporal_transform=None,
                         target_transform=None):
@@ -21,6 +22,7 @@ def get_validation_data(video_path,
         video_path,
         annotation_path,
         'validation',
+        sample_duration,
         spatial_transform=spatial_transform,
         temporal_transform=temporal_transform,
         target_transform=target_transform,
