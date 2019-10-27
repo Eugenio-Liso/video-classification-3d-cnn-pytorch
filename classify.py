@@ -96,7 +96,10 @@ def classify_video_offline(class_names, model, opt, video_path_formatter=lambda 
                 segment = segments[i]
                 # TODO this is not totally correct, but i have no choice here
                 # This is because now, the input frame batches are processed only once and together, so i do not have the
-                # execution time for a single batch
+                # execution time for a single batch. So, this outputs the time the NN takes to process all the batches of
+                # a single video
+                # To fix this, you should adapt the code in the 'live' settings here, because there the prediction time
+                # is per batch. See `classify_video_online`
                 exec_time = execution_time
 
                 exec_times_with_segments.append((segment, exec_time))
