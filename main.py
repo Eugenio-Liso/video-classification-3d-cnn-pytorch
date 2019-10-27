@@ -34,23 +34,6 @@ def print_tensors_dump():
             pass
 
 
-# import psutil
-# def memReport():
-#     for obj in gc.get_objects():
-#         if torch.is_tensor(obj):
-#             logger.info(type(obj), obj.size())
-#
-#
-# def cpuStats():
-#     logger.info(sys.version)
-#     logger.info(psutil.cpu_percent())
-#     logger.info(psutil.virtual_memory())  # physical memory usage
-#     pid = os.getpid()
-#     py = psutil.Process(pid)
-#     memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
-#     logger.info('memory GB:', memoryUse)
-#
-
 if __name__ == "__main__":
     opt = parse_opts()
     opt.mean = get_mean()
