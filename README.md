@@ -56,7 +56,9 @@ python main.py \
 
 # Advanced usage
 
-## Testing with validation/test set with frames
+## Testing with validation/test set 
+
+### With frames
 
 1. Make sure to extract the validation/test set in a folder with the following structure:
 
@@ -96,7 +98,16 @@ python main.py \
     --class_names_list classes_list/class_names_list_thesis \
     --frames
    ```
-   
+
+### With videos
+
+The directory structure should be similar to the one above. The difference is, instead of frames, 
+you should have videos (for better compatibility, use .mp4 format).
+
+To generate the annotation file, use the script `util_scripts/generic_dataset_to_json.py` in the training repository.
+
+To run the evaluation, just use the command in the `Simple usage` section.
+
 # Evaluate prediction quality
 
 To visualize the classification results directly on videos, use ```generate_result_video/generate_result_video.py```.
