@@ -93,7 +93,7 @@ if __name__ == '__main__':
     cmap = opt.colormap
     output_plot = opt.output_plot
     rename_target_class = opt.rename_target_class
-
+    rename_input_name = opt.rename_input_name
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
     elif merge and (len(input_csv) < 2 or not filter_on_class):
@@ -191,7 +191,7 @@ if __name__ == '__main__':
                         mean_accuracy = row[3]
 
                         if '.csv' in accuracy_key:
-                            accuracy_key = accuracy_key.split('.')[0]
+                            accuracy_key = accuracy_key[:accuracy_key.rfind('.csv')]
                         mean_accuracies[accuracy_key] = mean_accuracy
 
                         class_precision, _ = get_metric(dummy_class_names, class_indexes_for_metrics[0], row)
@@ -209,7 +209,12 @@ if __name__ == '__main__':
         else:
             padTitle = False
 
-        x_labels = mean_accuracies.keys()
+        x_labels = list(mean_accuracies.keys())
+        if rename_input_name:
+            for i in range(len(x_labels)):
+                if x_labels[i] in rename_input_name:
+                    x_labels[i] = rename_input_name[x_labels[i]]
+
         build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,)
         build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
                    mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
