@@ -1,9 +1,9 @@
-import os
 import json
+import os
 import subprocess
-import numpy as np
-from opts_predictions import parse_opts_prediction
+
 from PIL import Image, ImageDraw, ImageFont
+from opts_predictions import parse_opts_prediction
 
 
 def get_fps(video_file_path, frames_directory_path):
@@ -64,15 +64,9 @@ if __name__ == '__main__':
             unit = len(clips)
         else:
             unit = temporal_unit_window
-        for i in range(0, len(clips), unit):
-            n_elements = min(unit, len(clips) - i)
-            scores = np.array(clips[i]['scores'])
-            for j in range(i, min(i + unit, len(clips))):
-                scores += np.array(clips[i]['scores'])
-            scores /= n_elements
-            unit_classes.append(class_names[np.argmax(scores)])
-            unit_segments.append([clips[i]['segment'][0],
-                                  clips[i + n_elements - 1]['segment'][1]])
+        for i in range(len(clips)):
+            unit_classes.append(clips[i]['label'])
+            unit_segments.append([clips[i]['segment'][0], clips[i]['segment'][1]])
 
         if os.path.exists('tmp'):
             subprocess.call('rm -rf tmp', shell=True)
@@ -85,8 +79,13 @@ if __name__ == '__main__':
         for i in range(len(unit_classes)):
             for j in range(unit_segments[i][0], unit_segments[i][1] + 1):
                 frame_to_read = 'tmp/image_{:05}.jpg'.format(j)
+                image = None
                 try:
                     image = Image.open(frame_to_read).convert('RGB')
+                except:
+                    print(f"WARNING: Skipping frame {frame_to_read} since it was not extracted by FFMPEG")
+
+                if image is not None:
                     min_length = min(image.size)
                     font_size = int(min_length * 0.05)
                     font = ImageFont.truetype(os.path.join(os.path.dirname(__file__),
@@ -104,8 +103,6 @@ if __name__ == '__main__':
                     d.text((x + x_offset, y + y_offset), unit_classes[i],
                            font=font, fill=(235, 235, 235))
                     image.save('tmp/image_{:05}_pred.jpg'.format(j))
-                except:
-                    print(f"WARNING: Skipping frame {frame_to_read} since it was not extracted by FFMPEG")
 
         dst_file_path = os.path.join(prediction_folder, video_path.split('/')[-1])
         subprocess.call(
