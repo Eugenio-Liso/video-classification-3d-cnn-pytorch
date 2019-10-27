@@ -85,7 +85,6 @@ if __name__ == "__main__":
         os.makedirs('tmp')
 
     input_video_dir = opt.video_root
-    input_video_files = [f for f in os.listdir(input_video_dir) if os.path.isfile(os.path.join(input_video_dir, f))]
 
     type_of_prediction = opt.type_of_prediction
 
@@ -99,43 +98,46 @@ if __name__ == "__main__":
         executions_times_with_video_names = all_execution_times
 
     else:
-        logger.info('Input video files: {}'.format(input_video_files))
-
         if type_of_prediction == 'offline':
             root_tmp_dir = 'tmp'
 
-            for input_file in input_video_files:
-                video_path = os.path.join(input_video_dir, input_file)
+            for target_class in os.listdir(input_video_dir):
+                target_dir = os.path.join(input_video_dir, target_class)
 
-                input_dir = f"{root_tmp_dir}/{input_file}"
-                os.makedirs(input_dir, exist_ok=True)
-                vidcap = cv.VideoCapture(video_path)
+                for input_file in os.listdir(target_dir):
+                    video_path = os.path.join(target_dir, input_file)
 
-                print(
-                    'Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
-                        vidcap.get(5)))
+                    input_dir = f"{root_tmp_dir}/{target_class}/{input_file}"
+                    os.makedirs(input_dir, exist_ok=True)
+                    vidcap = cv.VideoCapture(video_path)
 
-                print(f"Reading frames of video {input_file}...")
+                    print(
+                        'Width = ' + str(vidcap.get(3)) + ' Height = ' + str(vidcap.get(4)) + ' fps = ' + str(
+                            vidcap.get(5)))
 
-                success, image = vidcap.read()
-                count = 1
-                while success:
-                    cv.imwrite(os.path.join(input_dir, "image_%05d.jpg" % count),
-                               image)  # save frame as JPEG file
-                    count += 1
+                    print(f"Reading frames of video {input_file}...")
+
                     success, image = vidcap.read()
+                    count = 1
+                    while success:
+                        cv.imwrite(os.path.join(input_dir, "image_%05d.jpg" % count),
+                                   image)  # save frame as JPEG file
+                        count += 1
+                        success, image = vidcap.read()
 
             opt.video_root = root_tmp_dir
 
             # Exclude label from input_dir
             all_video_results, all_execution_times = \
-                classify_video_offline(class_names, model, opt,
-                                       lambda root_path, label, video_id: Path(os.path.join(root_path, video_id)))
+                classify_video_offline(class_names, model, opt)
             print(f'Prediction phase completed! Output metrics csv written in path: {opt.output_csv}')
             outputs = all_video_results
             executions_times_with_video_names = all_execution_times
 
         elif type_of_prediction == 'live':
+            input_video_files = [f for f in os.listdir(input_video_dir) if
+                                 os.path.isfile(os.path.join(input_video_dir, f))]
+
             for input_file in input_video_files:
                 video_path = os.path.join(input_video_dir, input_file)
                 logger.info('Prediction on input: {}'.format(video_path))
@@ -197,7 +199,7 @@ if __name__ == "__main__":
                     # Color in BGR!
                     min_length = min(width, height)
                     textsize = cv.getTextSize(text_with_prediction, fontFace=font, fontScale=font_size,
-                                       thickness=thickness_text)[0]
+                                              thickness=thickness_text)[0]
                     x = int(font_size * 50)
                     y = int(font_size * 25)
                     x_offset = x
