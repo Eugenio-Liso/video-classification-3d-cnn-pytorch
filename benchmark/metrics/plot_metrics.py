@@ -1,13 +1,14 @@
+import collections
 import csv
 import os
 
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-from opts_metrics_plot import parse_opts_metrics_plot
-import matplotlib.cm as cm
 from matplotlib.colors import Normalize
-import collections
+from opts_metrics_plot import parse_opts_metrics_plot
+
 sns.set()
 
 
@@ -40,19 +41,50 @@ def insert_values_on_bars(ax, bars):
                     ha='center', va='bottom')
 
 
-def build_plot(idx_chart, classes_metric, class_names, x_axis, title, cmap, padTitle, mean_prediction_time=None,
-               mean_accuracy_keys=None, mean_accuracy_value=None, std_prediction_time=None):
+def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitle, mean_prediction_time=None,
+               mean_accuracy_keys=None, mean_accuracy_value=None, std_prediction_time=None, merge=False):
     ax = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     cm_map = cm.get_cmap(cmap)
     norm = Normalize(vmin=0, vmax=len(classes_metric))
+    if not merge or filter_on_class:
+        barlist = plt.bar(x_axis, classes_metric, color=cm_map(norm(x_axis)))
+        insert_values_on_bars(ax, barlist)
+    elif not filter_on_class:
 
-    barlist = plt.bar(x_axis, classes_metric, color=cm_map(norm(x_axis)))
-    insert_values_on_bars(ax, barlist)
+        colors = ['orange', 'green']
+
+        width = opt.width  # the width of the bars
+        width_intervals = []
+        if len(input_csv) == 2:
+            width_intervals.append(-(width / 2))
+            width_intervals.append(width / 2)
+        else:
+            raise Exception("Find an automatic way to divide bar chart range for more than two input csv")
+
+        all_bars = []
+        if mean_accuracy_keys is not None:
+            labels_it = iter(mean_accuracy_keys)
+        for idx in range(0, len(class_names) * len(input_csv), len(class_names)):
+            metric_single_csv = classes_metric[idx:len(class_names) * (int(idx / len(class_names)) + 1)]
+
+            current_idx = int(idx / len(class_names))
+            if mean_accuracy_keys is not None and std_prediction_time is not None and mean_prediction_time is not None:
+                single_bar = plt.bar(x_axis + width_intervals[current_idx], metric_single_csv, width=width,
+                                     color=colors[current_idx], label=next(labels_it))
+                ax.legend(bbox_to_anchor=(0., 0.02, 1., .102), loc='lower left',
+                          ncol=len(input_csv), mode='expand', borderaxespad=0.)
+            else:
+                single_bar = plt.bar(x_axis + width_intervals[current_idx], metric_single_csv, width=width,
+                                     color=colors[current_idx])
+
+            all_bars.append(single_bar)
+            insert_values_on_bars(ax, single_bar)
+
     ax.xaxis.grid()  # horizontal grid only
-
-    plt.xticks(x_axis, class_names)
+    # ax.legend(all_bars, ('a', 'n'))
+    plt.xticks(x_axis, x_labels)
     plt.ylim(top=1)
 
     # Think of a general way to actually change colors dynamically
@@ -96,22 +128,23 @@ if __name__ == '__main__':
     rename_input_name = opt.rename_input_name
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
-    elif merge and (len(input_csv) < 2 or not filter_on_class):
-        raise Exception("When merging csv files, you should specify at least two input csv and a class filter")
+    elif merge and (len(input_csv) < 2):
+        raise Exception("When merging csv files, you should specify at least two input csv")
 
-    if not merge:
-        with open(classes_list, 'r') as f:
-            class_names = []
-            for row in f:
-                target_class = row[:-1]
-                if target_class in rename_target_class:
-                    class_names.append(rename_target_class[target_class])
-                else:
-                    class_names.append(target_class)
-        length_chart = len(class_names)
-        x_axis = np.arange(length_chart)
-    else:
+    with open(classes_list, 'r') as f:
+        class_names = []
+        for row in f:
+            target_class = row[:-1]
+            if target_class in rename_target_class:
+                class_names.append(rename_target_class[target_class])
+            else:
+                class_names.append(target_class)
+
+    length_chart = len(class_names)
+    if merge and filter_on_class:
         x_axis = np.arange(len(input_csv))
+    else:
+        x_axis = np.arange(length_chart)
 
     if not merge:
         with open(input_csv[0], 'r') as csv_file:
@@ -158,7 +191,10 @@ if __name__ == '__main__':
         classes_precisions = []
         classes_recalls = []
         classes_fscores = []
-        dummy_class_names = [filter_on_class]
+        if filter_on_class:
+            dummy_class_names = [filter_on_class]
+        else:
+            dummy_class_names = class_names
         mean_pred_times = []
         std_pred_times = []
 
@@ -173,17 +209,19 @@ if __name__ == '__main__':
                 for row in csv_reader:
                     if first_header:
                         first_header = False
-                        class_found = False
-                        tmp_idx = 0
-                        while tmp_idx < len(row):
-                            row_value = row[tmp_idx]
-                            if "_" in row_value and row_value.split('_')[1] == filter_on_class:
-                                class_found = True
-                                class_indexes_for_metrics.append(tmp_idx)
-                            tmp_idx += 1
-                        if not class_found:
-                            raise Exception(f"The class specified: {filter_on_class} cannot be found in csv metrics")
-                        assert len(class_indexes_for_metrics) == 3, "The class metrics should be three"
+                        if filter_on_class:
+                            class_found = False
+                            tmp_idx = 0
+                            while tmp_idx < len(row):
+                                row_value = row[tmp_idx]
+                                if "_" in row_value and row_value.split('_')[1] == filter_on_class:
+                                    class_found = True
+                                    class_indexes_for_metrics.append(tmp_idx)
+                                tmp_idx += 1
+                            if not class_found:
+                                raise Exception(
+                                    f"The class specified: {filter_on_class} cannot be found in csv {csv_file}")
+                            assert len(class_indexes_for_metrics) == 3, "The class metrics should be three"
 
                     if len(row) != 0 and row[0] == 'Metrics_overall_dataset':
                         mean_prediction_time = row[1]
@@ -193,10 +231,16 @@ if __name__ == '__main__':
                         if '.csv' in accuracy_key:
                             accuracy_key = accuracy_key[:accuracy_key.rfind('.csv')]
                         mean_accuracies[accuracy_key] = mean_accuracy
+                        idx_metrics = 4
 
-                        class_precision, _ = get_metric(dummy_class_names, class_indexes_for_metrics[0], row)
-                        class_recall, _ = get_metric(dummy_class_names, class_indexes_for_metrics[1], row)
-                        class_fscore, _ = get_metric(dummy_class_names, class_indexes_for_metrics[2], row)
+                        if filter_on_class:
+                            class_precision, _ = get_metric(dummy_class_names, class_indexes_for_metrics[0], row)
+                            class_recall, _ = get_metric(dummy_class_names, class_indexes_for_metrics[1], row)
+                            class_fscore, _ = get_metric(dummy_class_names, class_indexes_for_metrics[2], row)
+                        else:
+                            class_precision, idx_metrics = get_metric(class_names, idx_metrics, row)
+                            class_recall, idx_metrics = get_metric(class_names, idx_metrics, row)
+                            class_fscore, _ = get_metric(class_names, idx_metrics, row)
 
                         classes_precisions.extend(class_precision)
                         classes_recalls.extend(class_recall)
@@ -213,13 +257,28 @@ if __name__ == '__main__':
         if rename_input_name:
             for i in range(len(x_labels)):
                 if x_labels[i] in rename_input_name:
-                    x_labels[i] = rename_input_name[x_labels[i]]
+                    prev_val = mean_accuracies[x_labels[i]]
+                    del mean_accuracies[x_labels[i]]
 
-        build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,)
-        build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
-                   mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
-                   std_prediction_time=std_pred_times)
-        build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle)
+                    renamed_label = rename_input_name[x_labels[i]]
+                    mean_accuracies[renamed_label] = prev_val
+                    x_labels[i] = renamed_label
+
+        if filter_on_class:
+            build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,
+                       merge=merge)
+            build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
+                       mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                       std_prediction_time=std_pred_times, merge=merge)
+            build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle,
+                       merge=merge)
+        else:
+            build_plot(131, classes_precisions, class_names, x_axis, "Classes Precision", cmap, padTitle,
+                       merge=merge)
+            build_plot(132, classes_recalls, class_names, x_axis, "Classes Recall", cmap, padTitle,
+                       mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                       std_prediction_time=std_pred_times, merge=merge)
+            build_plot(133, classes_fscores, class_names, x_axis, "Classes F-Score", cmap, padTitle, merge=merge)
 
         plt.subplots_adjust(wspace=0.5, hspace=1)
         if output_plot is None:

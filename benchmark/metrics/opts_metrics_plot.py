@@ -20,6 +20,7 @@ def parse_opts_metrics_plot():
     parser.add_argument("--x_size", type=int, help="Size of the whole plot in cm on X axis", default=35)
     parser.add_argument("--y_size", type=int, help="Size of the whole plot in cm on Y axis", default=35)
     parser.add_argument("--rename_input_name", type=json.loads, help="Optional file names to rename", default={})
+    parser.add_argument("--width", type=float, help="Width of bars in plot", default=0.4)
 
     args = parser.parse_args()
 
