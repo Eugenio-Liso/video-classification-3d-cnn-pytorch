@@ -51,6 +51,7 @@ def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitl
         norm = Normalize(vmin=0, vmax=len(classes_metric))
         barlist = plt.bar(x_axis, classes_metric, color=cm_map(norm(x_axis)))
         insert_values_on_bars(ax, barlist)
+        plt.xticks(x_axis, x_labels)
     elif not filter_on_class:
         norm = Normalize(vmin=0, vmax=len(class_names) * len(input_csv))
 
@@ -77,10 +78,10 @@ def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitl
 
             all_bars.append(single_bar)
             insert_values_on_bars(ax, single_bar)
+        plt.xticks(x_axis + width * (len(input_csv) / 2), x_labels)
 
     ax.xaxis.grid()  # horizontal grid only
     # ax.legend(all_bars, ('a', 'n'))
-    plt.xticks(x_axis, x_labels)
     plt.ylim(top=1)
 
     # Think of a general way to actually change colors dynamically
