@@ -12,7 +12,7 @@ def parse_opts_metrics_plot():
     parser.add_argument('--merge', action='store_true',
                         help='If used, it will merge the input_csv files along the class specified with "filter_on_class". '
                              'Only a subset of the metrics will be displayed')
-    parser.add_argument('--colormap', default='gist_rainbow', type=str,
+    parser.add_argument('--colormap', default='nipy_spectral', type=str,
                         help='Colormap to use when drawing the chart')
     parser.add_argument('--output_plot', type=Path,
                         help='Output path of the plot containing the calculated metrics')

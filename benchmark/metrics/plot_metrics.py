@@ -47,21 +47,17 @@ def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitl
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     cm_map = cm.get_cmap(cmap)
-    norm = Normalize(vmin=0, vmax=len(classes_metric))
     if not merge or filter_on_class:
+        norm = Normalize(vmin=0, vmax=len(classes_metric))
         barlist = plt.bar(x_axis, classes_metric, color=cm_map(norm(x_axis)))
         insert_values_on_bars(ax, barlist)
     elif not filter_on_class:
-
-        colors = ['orange', 'green']
+        norm = Normalize(vmin=0, vmax=len(class_names) * len(input_csv))
 
         width = opt.width  # the width of the bars
         width_intervals = []
-        if len(input_csv) == 2:
-            width_intervals.append(-(width / 2))
-            width_intervals.append(width / 2)
-        else:
-            raise Exception("Find an automatic way to divide bar chart range for more than two input csv")
+        for bar_chart_idx in np.arange(0, width * len(input_csv), width):
+            width_intervals.append(bar_chart_idx)
 
         all_bars = []
         if mean_accuracy_keys is not None:
@@ -72,12 +68,12 @@ def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitl
             current_idx = int(idx / len(class_names))
             if mean_accuracy_keys is not None and std_prediction_time is not None and mean_prediction_time is not None:
                 single_bar = plt.bar(x_axis + width_intervals[current_idx], metric_single_csv, width=width,
-                                     color=colors[current_idx], label=next(labels_it))
+                                     color=cm_map(norm(idx)), label=next(labels_it))
                 ax.legend(bbox_to_anchor=(0., 0.02, 1., .102), loc='lower left',
                           ncol=len(input_csv), mode='expand', borderaxespad=0.)
             else:
                 single_bar = plt.bar(x_axis + width_intervals[current_idx], metric_single_csv, width=width,
-                                     color=colors[current_idx])
+                                     color=cm_map(norm(idx)))
 
             all_bars.append(single_bar)
             insert_values_on_bars(ax, single_bar)
