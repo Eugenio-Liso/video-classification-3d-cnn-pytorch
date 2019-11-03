@@ -77,7 +77,10 @@ def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitl
                                      color=cm_map(norm(idx)))
 
             all_bars.append(single_bar)
-            insert_values_on_bars(ax, single_bar)
+            if len(input_csv) <= 4:
+                insert_values_on_bars(ax, single_bar)
+            else:
+                print("Skipping annotation of values in bar chart, since it could be too cluttered")
         plt.xticks(x_axis + width * (len(input_csv) / 2), x_labels)
 
     ax.xaxis.grid()  # horizontal grid only
