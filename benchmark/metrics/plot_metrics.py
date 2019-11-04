@@ -42,8 +42,12 @@ def insert_values_on_bars(ax, bars):
 
 
 def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitle, mean_prediction_time=None,
-               mean_accuracy_keys=None, mean_accuracy_value=None, std_prediction_time=None, merge=False):
-    ax = plt.subplot(idx_chart)
+               mean_accuracy_keys=None, mean_accuracy_value=None, std_prediction_time=None, merge=False,
+               single_plot=False):
+    if single_plot:
+        _, ax = plt.subplots()
+    else:
+        ax = plt.subplot(idx_chart)
     # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     cm_map = cm.get_cmap(cmap)
@@ -126,6 +130,8 @@ if __name__ == '__main__':
     output_plot = opt.output_plot
     rename_target_class = opt.rename_target_class
     rename_input_name = opt.rename_input_name
+    only_fscore = opt.only_fscore
+
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
     elif merge and (len(input_csv) < 2):
@@ -172,11 +178,17 @@ if __name__ == '__main__':
                     else:
                         padTitle = False
 
-                    build_plot(131, class_precision, class_names, x_axis, "Classes Precision", cmap, padTitle)
-                    build_plot(132, class_recall, class_names, x_axis, "Classes Recall", cmap, padTitle,
-                               mean_prediction_time=mean_prediction_time,
-                               mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
-                    build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score", cmap, padTitle)
+                    if only_fscore:
+                        build_plot(None, class_fscore, class_names, x_axis, "Classes F-Score", cmap, padTitle,
+                                   single_plot=True,
+                                   mean_prediction_time=mean_prediction_time,
+                                   mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
+                    else:
+                        build_plot(131, class_precision, class_names, x_axis, "Classes Precision", cmap, padTitle)
+                        build_plot(132, class_recall, class_names, x_axis, "Classes Recall", cmap, padTitle,
+                                   mean_prediction_time=mean_prediction_time,
+                                   mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
+                        build_plot(133, class_fscore, class_names, x_axis, "Classes F-Score", cmap, padTitle)
 
                     plt.subplots_adjust(wspace=0.5, hspace=1)
                     if output_plot is None:
@@ -265,20 +277,31 @@ if __name__ == '__main__':
                     x_labels[i] = renamed_label
 
         if filter_on_class:
-            build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,
-                       merge=merge)
-            build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
-                       mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
-                       std_prediction_time=std_pred_times, merge=merge)
-            build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle,
-                       merge=merge)
+            if only_fscore:
+                build_plot(None, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle,
+                           mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                           std_prediction_time=std_pred_times, merge=merge, single_plot=True)
+            else:
+                build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,
+                           merge=merge)
+                build_plot(132, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
+                           mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                           std_prediction_time=std_pred_times, merge=merge)
+                build_plot(133, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle,
+                           merge=merge)
         else:
-            build_plot(131, classes_precisions, class_names, x_axis, "Classes Precision", cmap, padTitle,
-                       merge=merge)
-            build_plot(132, classes_recalls, class_names, x_axis, "Classes Recall", cmap, padTitle,
-                       mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
-                       std_prediction_time=std_pred_times, merge=merge)
-            build_plot(133, classes_fscores, class_names, x_axis, "Classes F-Score", cmap, padTitle, merge=merge)
+            if only_fscore:
+                build_plot(None, classes_fscores, class_names, x_axis, "Classes F-Score", cmap, padTitle,
+                           single_plot=True,
+                           mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                           std_prediction_time=std_pred_times, merge=merge)
+            else:
+                build_plot(131, classes_precisions, class_names, x_axis, "Classes Precision", cmap, padTitle,
+                           merge=merge)
+                build_plot(132, classes_recalls, class_names, x_axis, "Classes Recall", cmap, padTitle,
+                           mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                           std_prediction_time=std_pred_times, merge=merge)
+                build_plot(133, classes_fscores, class_names, x_axis, "Classes F-Score", cmap, padTitle, merge=merge)
 
         plt.subplots_adjust(wspace=0.5, hspace=1)
         if output_plot is None:
