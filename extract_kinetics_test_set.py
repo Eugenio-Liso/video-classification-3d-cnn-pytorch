@@ -29,12 +29,25 @@ if __name__ == '__main__':
     parser.add_argument("--filter_on_classes", nargs='*', help="Optional classes to filter on", default=[])
     parser.add_argument("--test_set_json", default='test_set/kinetics_400/kinetics_test.json',
                         type=Path, help="Path to the test set json of kinectics")
+    parser.add_argument("--max_videos_for_class", default=100,
+                        type=int, help="Max number of videos per class to download")
+    parser.add_argument('--classes_list', default='classes_list/class_names_list_kinetics', type=str,
+                        help='File containing the available Kinetics classes')
 
     args = parser.parse_args()
 
     output_frames_dir = args.output_frames_dir
     filter_on_classes = args.filter_on_classes
     test_set_json = args.test_set_json
+    max_videos_for_class = args.max_videos_for_class
+    classes_list = args.classes_list
+
+    counter_for_classes = {}
+
+    with open(classes_list) as f:
+        for row in f:
+            class_name = row[:-1]
+            counter_for_classes[class_name] = 0
 
     tmp_dir = 'tmp'
     os.makedirs(tmp_dir, exist_ok=True)
@@ -48,8 +61,8 @@ if __name__ == '__main__':
             segment = video_annotations['segment']
             target_class = video_annotations['label']
 
-            if not filter_on_classes or (target_class in filter_on_classes):
-
+            if not filter_on_classes or (target_class in filter_on_classes) or counter_for_classes[target_class] < max_videos_for_class:
+                counter_for_classes[target_class] += 1
                 start_seconds = hou_min_sec(float(segment[0]) * 1000)
                 end_seconds = hou_min_sec(float(segment[1]) * 1000)
 
@@ -77,6 +90,7 @@ if __name__ == '__main__':
                     continue
 
                 yt.streams.filter(subtype=video_extension).first().download(output_path=tmp_dir, filename=video_id)
+                print(f"Total video downloaded for class {target_class} is {counter_for_classes[target_class]}")
 
                 input_video_path = os.path.join(tmp_dir, f"{video_id}.{video_extension}")
                 ffmpeg_command = 'ffmpeg -ss %(start_timestamp)s -i "%(videopath)s" -to %(clip_length)s -copyts -loglevel error "%(outpath)s"' % {
