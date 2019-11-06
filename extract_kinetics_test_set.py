@@ -49,6 +49,25 @@ if __name__ == '__main__':
             class_name = row[:-1]
             counter_for_classes[class_name] = 0
 
+    for target_class in os.listdir(output_frames_dir):
+        target_dir = os.path.join(output_frames_dir, target_class)
+
+        count = 0
+        for video in os.listdir(target_dir):
+            video_dir = os.path.join(target_dir, video)
+            if os.path.isdir(video_dir):
+                if len(os.listdir(video_dir)) == 0:
+                    print(f"Directory {video_dir} is empty. Removing it.")
+                    os.rmdir(video_dir)
+                else:
+                    count += 1
+
+        if count > max_videos_for_class:
+            raise Exception(f"{target_class} has more videos than {max_videos_for_class}. Remove some of them")
+        counter_for_classes[target_class] = count
+
+    print(f"Current number of videos per class: {counter_for_classes}")
+
     tmp_dir = 'tmp'
     os.makedirs(tmp_dir, exist_ok=True)
     video_extension = 'mp4'
