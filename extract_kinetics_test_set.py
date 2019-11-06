@@ -124,4 +124,4 @@ if __name__ == '__main__':
 
                 subprocess.call(f'rm {input_video_path}', shell=True)
             else:
-                print(f"Class {target_class} has {counter_for_classes[target_class]}. Reached limit of {max_videos_for_class} videos.")
+                print(f"Class {target_class} has {counter_for_classes[target_class]} videos. Reached limit of {max_videos_for_class} videos.")
