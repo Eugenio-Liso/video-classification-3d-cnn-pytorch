@@ -82,7 +82,7 @@ if __name__ == '__main__':
             segment = video_annotations['segment']
             target_class = video_annotations['label']
 
-            if counter_for_classes[target_class] < max_videos_for_class or not filter_on_classes or (target_class in filter_on_classes):
+            if counter_for_classes[target_class] < max_videos_for_class and(not filter_on_classes or (target_class in filter_on_classes)):
                 counter_for_classes[target_class] += 1
                 start_seconds = hou_min_sec(float(segment[0]) * 1000)
                 end_seconds = hou_min_sec(float(segment[1]) * 1000)
@@ -124,4 +124,4 @@ if __name__ == '__main__':
 
                 subprocess.call(f'rm {input_video_path}', shell=True)
             else:
-                print(f"Class {target_class} has {counter_for_classes[target_class]}, that are more than {max_videos_for_class}")
+                print(f"Class {target_class} has {counter_for_classes[target_class]}. Reached limit of {max_videos_for_class} videos.")
