@@ -22,6 +22,8 @@ def parse_opts_metrics_plot():
     parser.add_argument("--rename_input_name", type=json.loads, help="Optional file names to rename", default={})
     parser.add_argument("--width", type=float, help="Width of bars in plot", default=0.4)
     parser.add_argument("--only_fscore", action="store_true", help="Plot only F-Score")
+    parser.add_argument("--no_accuracy", action="store_true", help="Does not display the accuracy")
+
 
     args = parser.parse_args()
 

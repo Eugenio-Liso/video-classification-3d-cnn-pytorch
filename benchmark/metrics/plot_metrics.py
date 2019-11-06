@@ -100,9 +100,11 @@ def build_plot(idx_chart, classes_metric, x_labels, x_axis, title, cmap, padTitl
     if mean_accuracy_keys is not None and std_prediction_time is not None and mean_prediction_time is not None:
         printed_str = ''
         for index, keyName in enumerate(mean_accuracy_keys):
-            printed_str += f'Accuracy on {keyName}: {"{:.4f}".format(float(mean_accuracy_keys[keyName]))} ' \
-                           f'- Mean pred time: {"{:.5f}".format(float(mean_prediction_time[index]))} ' \
-                           f'- STD pred time: {"{:.5f}".format(float(std_prediction_time[index]))}\n'
+            if not no_accuracy:
+                printed_str += f'Accuracy on {keyName}: {"{:.4f}".format(float(mean_accuracy_keys[keyName]))} - '
+
+            printed_str += f'Mean pred time: {"{:.5f}".format(float(mean_prediction_time[index]))} ' \
+            f'- STD pred time: {"{:.5f}".format(float(std_prediction_time[index]))}\n'
         plt.xlabel(printed_str)
     elif mean_prediction_time is not None and std_prediction_time is not None and mean_accuracy_value is not None:
         plt.xlabel(
@@ -131,6 +133,7 @@ if __name__ == '__main__':
     rename_target_class = opt.rename_target_class
     rename_input_name = opt.rename_input_name
     only_fscore = opt.only_fscore
+    no_accuracy = opt.no_accuracy
 
     if not merge and len(input_csv) != 1:
         raise Exception("When not merging different csv metrics, you should specify only one csv in input")
@@ -172,7 +175,6 @@ if __name__ == '__main__':
                     mean_prediction_time = '{:.4f}'.format(float(mean_prediction_time))
                     std_prediction_time = '{:.4f}'.format(float(std_prediction_time))
                     mean_accuracy = '{:.4f}'.format(float(mean_accuracy))
-
                     if max(max(class_precision), max(class_recall), max(class_fscore)) > 0.98:
                         padTitle = True
                     else:
