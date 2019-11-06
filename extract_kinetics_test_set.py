@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 from pathlib import Path
+import shutil
 
 from pytube import YouTube
 from pytube.exceptions import VideoUnavailable
@@ -59,11 +60,12 @@ if __name__ == '__main__':
                 if len(os.listdir(video_dir)) == 0:
                     print(f"Directory {video_dir} is empty. Removing it.")
                     os.rmdir(video_dir)
+                elif count > max_videos_for_class:
+                    # raise Exception(f"{target_class} has more videos than {max_videos_for_class}. Remove {(count - max_videos_for_class) + 1} video(s)")
+                    print(f"{target_class} has more videos than {max_videos_for_class}. Removing {(count - max_videos_for_class) + 1} video(s)")
+                    shutil.rmtree(video_dir)
                 else:
                     count += 1
-
-        if count > max_videos_for_class:
-            raise Exception(f"{target_class} has more videos than {max_videos_for_class}. Remove some of them")
         counter_for_classes[target_class] = count
 
     print(f"Current number of videos per class: {counter_for_classes}")
@@ -121,3 +123,5 @@ if __name__ == '__main__':
                 subprocess.call(ffmpeg_command, shell=True)
 
                 subprocess.call(f'rm {input_video_path}', shell=True)
+            else:
+                print(f"Class {target_class} has {counter_for_classes[target_class]}, that are more than {max_videos_for_class}")
