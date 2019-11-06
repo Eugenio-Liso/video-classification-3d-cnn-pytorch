@@ -80,7 +80,7 @@ if __name__ == '__main__':
             segment = video_annotations['segment']
             target_class = video_annotations['label']
 
-            if not filter_on_classes or (target_class in filter_on_classes) or counter_for_classes[target_class] < max_videos_for_class:
+            if counter_for_classes[target_class] < max_videos_for_class or not filter_on_classes or (target_class in filter_on_classes):
                 counter_for_classes[target_class] += 1
                 start_seconds = hou_min_sec(float(segment[0]) * 1000)
                 end_seconds = hou_min_sec(float(segment[1]) * 1000)
