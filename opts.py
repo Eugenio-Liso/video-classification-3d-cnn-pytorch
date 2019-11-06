@@ -33,9 +33,8 @@ def parse_opts():
     parser.add_argument('--verbose', action='store_true', help='')
     parser.set_defaults(verbose=False)
     parser.add_argument('--type_of_prediction', default='offline', type=str,
-                        help='If offline, the frames will be extracted from the video and predictions will be done on '
-                             'them. If live, predictions will be showed in real time. This option can be used only '
-                             'when prediction_input_mode is set to opencv.')
+                        help='If offline, predictions will be done offline from frames or videos. If live, predictions will '
+                             'be done in real-time (i.e. when the video is playing)')
     parser.add_argument('--frames', action='store_true',
                         help='If activated, the video frames will be used instead of a video. The video_root must contain '
                              'subfolders, each one representing a target class and containing a set of frames.')
