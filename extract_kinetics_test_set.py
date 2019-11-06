@@ -60,7 +60,7 @@ if __name__ == '__main__':
                 if len(os.listdir(video_dir)) == 0:
                     print(f"Directory {video_dir} is empty. Removing it.")
                     os.rmdir(video_dir)
-                elif count > max_videos_for_class:
+                elif count == max_videos_for_class:
                     # raise Exception(f"{target_class} has more videos than {max_videos_for_class}. Remove {(count - max_videos_for_class) + 1} video(s)")
                     print(f"{target_class} has more videos than {max_videos_for_class}. Removing {(count - max_videos_for_class) + 1} video(s)")
                     shutil.rmtree(video_dir)
