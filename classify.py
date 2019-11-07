@@ -184,7 +184,7 @@ def create_dataset_offline(opt, video_path_formatter):
     spatial_transform, temporal_transform = retrieve_spatial_temporal_transforms(opt)
 
     validation_data, collate_fn = get_validation_data(
-        opt.video_root, opt.annotation_path, opt.sample_duration, video_path_formatter,
+        opt.video_root, opt.annotation_path, opt.sample_duration, opt.use_alternative_label, video_path_formatter,
         spatial_transform, temporal_transform)
     val_loader = torch.utils.data.DataLoader(validation_data,
                                              batch_size=opt.batch_size_prediction,

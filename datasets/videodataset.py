@@ -38,6 +38,7 @@ class VideoDataset(data.Dataset):
                  annotation_path,
                  subset,
                  sample_duration,
+                 use_alternative_label,
                  augment_filters=None,
                  spatial_transform=None,
                  temporal_transform=None,
@@ -47,7 +48,7 @@ class VideoDataset(data.Dataset):
                  image_name_formatter=lambda x: f'image_{x:05d}.jpg',
                  target_type='label'):
         self.data, self.class_names = self.__make_dataset(
-            root_path, annotation_path, subset, video_path_formatter, sample_duration)
+            root_path, annotation_path, subset, video_path_formatter, sample_duration, use_alternative_label)
 
         self.augment_filters = augment_filters
         self.spatial_transform = spatial_transform
@@ -62,7 +63,9 @@ class VideoDataset(data.Dataset):
         self.target_type = target_type
 
     def __make_dataset(self, root_path, annotation_path, subset,
-                       video_path_formatter, sample_duration):
+                       video_path_formatter, sample_duration, use_alternative_label):
+        if use_alternative_label:
+            print("Using alternative label in 'database' data in annotation file")
         with annotation_path.open('r') as f:
             data = json.load(f)
         video_ids, annotations = get_video_ids_and_annotations(data, subset)
@@ -84,7 +87,11 @@ class VideoDataset(data.Dataset):
                 label = 'test'
                 label_id = -1
 
-            video_path = video_path_formatter(root_path, label, video_ids[i])
+            if use_alternative_label:
+                alternative_label = annotations[i]['original_label']
+                video_path = video_path_formatter(root_path, alternative_label, video_ids[i])
+            else:
+                video_path = video_path_formatter(root_path, label, video_ids[i])
             if not video_path.exists():
                 print(f"Warning: discarding {video_path} since it does not exists. Check the annotation file")
                 continue
