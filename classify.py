@@ -99,7 +99,7 @@ def classify_video_offline(class_names, model, opt, video_path_formatter=lambda 
                 # execution time for a single batch. So, this outputs the time the NN takes to process all the batches of
                 # a single video
                 # To fix this, you should adapt the code in the 'live' settings here, because there the prediction time
-                # is per batch. See `classify_video_online`
+                # is per batch. See `classify_video_online` or just slice the input tensor
                 exec_time = execution_time
 
                 exec_times_with_segments.append((segment, exec_time))
