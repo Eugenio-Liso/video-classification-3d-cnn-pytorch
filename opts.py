@@ -71,6 +71,10 @@ def parse_opts():
                         default=None,
                         type=Path,
                         help='Annotation file path')
+    parser.add_argument('--use_alternative_label', action='store_true', help='Uses an alternative label in the annotation file '
+                                                                             'to load correctly the video. Used only for test '
+                                                                             'purposes when comparing a dataset with a different '
+                                                                             'set of labels.')
     args = parser.parse_args()
 
     return args
