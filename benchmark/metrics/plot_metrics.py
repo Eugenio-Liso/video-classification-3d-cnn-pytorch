@@ -133,6 +133,7 @@ if __name__ == '__main__':
     rename_target_class = opt.rename_target_class
     rename_input_name = opt.rename_input_name
     only_fscore = opt.only_fscore
+    only_recall = opt.only_recall
     no_accuracy = opt.no_accuracy
 
     if not merge and len(input_csv) != 1:
@@ -182,6 +183,11 @@ if __name__ == '__main__':
 
                     if only_fscore:
                         build_plot(None, class_fscore, class_names, x_axis, "Classes F-Score", cmap, padTitle,
+                                   single_plot=True,
+                                   mean_prediction_time=mean_prediction_time,
+                                   mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
+                    elif only_recall:
+                        build_plot(None, class_recall, class_names, x_axis, "Classes Recall", cmap, padTitle,
                                    single_plot=True,
                                    mean_prediction_time=mean_prediction_time,
                                    mean_accuracy_value=mean_accuracy, std_prediction_time=std_prediction_time)
@@ -283,6 +289,10 @@ if __name__ == '__main__':
                 build_plot(None, classes_fscores, x_labels, x_axis, f"{filter_on_class} F-Score", cmap, padTitle,
                            mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
                            std_prediction_time=std_pred_times, merge=merge, single_plot=True)
+            elif only_recall:
+                build_plot(None, classes_recalls, x_labels, x_axis, f"{filter_on_class} Recall", cmap, padTitle,
+                           mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                           std_prediction_time=std_pred_times, merge=merge, single_plot=True)
             else:
                 build_plot(131, classes_precisions, x_labels, x_axis, f"{filter_on_class} Precision", cmap, padTitle,
                            merge=merge)
@@ -294,6 +304,11 @@ if __name__ == '__main__':
         else:
             if only_fscore:
                 build_plot(None, classes_fscores, class_names, x_axis, "Classes F-Score", cmap, padTitle,
+                           single_plot=True,
+                           mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
+                           std_prediction_time=std_pred_times, merge=merge)
+            elif only_recall:
+                build_plot(None, classes_recalls, class_names, x_axis, "Classes Recall", cmap, padTitle,
                            single_plot=True,
                            mean_accuracy_keys=mean_accuracies, mean_prediction_time=mean_pred_times,
                            std_prediction_time=std_pred_times, merge=merge)
